@@ -1,0 +1,30 @@
+version: 1
+project:
+  title: A Model of Enclosures - Online Appendix
+  description: Online appendix for "A model of enclosures - conflict, coordination, and efficiency in the transformation of land property rights."
+  affiliations:
+    - id: hunter
+      institution: Hunter College and The Graduate Center, City University of New York
+      department: Department of Economics
+  authors:
+    - name: Mathew J. Baker
+      affiliations:
+        - hunter
+    - name: Jonathan Conning
+      affiliations:
+        - hunter
+
+site:
+  template: book-theme
+  title: A Model of Enclosures
+  logo: null
+  nav:
+    - title: Home
+      file: README.md
+    - title: Model Construction
+      file: Model_Construction.ipynb
+  options:
+    hide_branding: true
+    logo_text: "A model of enclosures" 
+build:
+  output: _build
