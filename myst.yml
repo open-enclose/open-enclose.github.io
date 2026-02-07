@@ -17,7 +17,6 @@ project:
 site:
   template: book-theme
   title: A Model of Enclosures
-  logo: null
   nav:
     - title: Home
       file: README.md
@@ -25,6 +24,4 @@ site:
       file: Model_Construction.ipynb
   options:
     hide_branding: true
-    logo_text: "A model of enclosures" 
-build:
-  output: _build
+    logo_text: "A model of enclosures"
