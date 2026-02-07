@@ -1,7 +1,7 @@
-# open-enclose.github.io
+# A Model of Enclosures (appendix)
 
-Online appendix for the pape:
-> Baker, Matthew J., and Jonathan H. Conning. 2026. “A Model of Enclosures: Conflict, Coordination and Efficiency in the Transformation of Property Rights.” Hunter College Department of Economics Manuscript.
+This site contains online appendix materials for the manuscript paper:
+> Baker, Matthew J., and Jonathan H. Conning. 2026. “A Model of Enclosures: Conflict, Coordination and Efficiency in the Transformation of Property Rights.” [early Arxiv PDF](https://arxiv.org/abs/2311.01592)
 
 - Math derivations and code to reproduce all figures, as well as interactively explore how the model responds to parameter changes.
 
