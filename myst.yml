@@ -13,7 +13,7 @@ project:
     - name: Jonathan Conning
       affiliations:
         - hunter
-
+  github: https://github.com/open-enclose/open-enclose.github.io
 site:
   template: book-theme
   title: A Model of Enclosures
