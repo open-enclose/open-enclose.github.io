@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon as MplPolygon
 
-from . import loci
+from . import loci, model
 from .style import (
     COLOR_DECENTRALIZED,
     COLOR_MONOPOLY,
@@ -324,7 +324,7 @@ def combined_4x4(mu=1.0, tau=1.0):
     the codebase — see `ln_gg`, which is tau-extended but mu=0 only.
     """
     start, finish, step = 1.1, 2.1, 0.01
-    cv12 = ((1 - mu) * (1 - ALP) + ALP) / ALP
+    cv12 = model.theta_H(ALP, mu)   # theta_H^mu, eq. (24)
 
     the_1 = np.arange(start, finish, step)
     the_d = np.arange(0.8, finish, step)

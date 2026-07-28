@@ -78,6 +78,31 @@ def test_totalq_matches_closed_form_z_at_mu_one(lbar):
     )
 
 
+@pytest.mark.parametrize("mu", [0.0, 0.25, 0.5, 1.0])
+def test_lambda_matches_appendix_eq23(mu):
+    """Lambda_mu is spelled as online_appendix.md eq. (23) writes it.
+
+    Guards against the drift this replaced: three algebraically-equal spellings of this
+    same denominator had accumulated across three modules.
+    """
+    th = np.array([1.2, 1.5, 2.0])
+    expected = ((ALP * th) / (1 - mu * (1 - ALP)))**(1 / (1 - ALP))
+    np.testing.assert_allclose(e.Lambda(th, ALP, mu), expected)
+
+
+@pytest.mark.parametrize("mu", [0.0, 0.25, 0.5, 1.0])
+def test_theta_H_matches_appendix_eq24(mu):
+    """theta_H^mu = 1/alpha - mu(1-alpha)/alpha, eq. (24)."""
+    assert e.theta_H(ALP, mu) == pytest.approx(1 / ALP - mu * (1 - ALP) / ALP)
+
+
+def test_theta_H_is_where_lambda_equals_one():
+    """Cross-check tying eq. (24) back to eq. (23): theta_H^mu is by definition the theta
+    at which Lambda_mu = 1. Verifying that is stronger than restating the formula."""
+    for mu in (0.0, 0.4, 1.0):
+        assert e.Lambda(e.theta_H(ALP, mu), ALP, mu) == pytest.approx(1.0)
+
+
 def test_tepvt_g_threads_mu_through():
     """Regression guard: tepvt_g must use its own mu, not hardcode mu=0 internally.
 

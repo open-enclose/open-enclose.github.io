@@ -19,22 +19,24 @@ keyword arguments, while remaining fully parameterized for other calibrations.
 
 import numpy as np
 
+from . import model
 from .style import safe_log_power
 
-ALP = 2 / 3       # paper's benchmark alpha
-C = 1.0           # paper's benchmark c/A
-CV = 1 / ALP      # theta_H at mu=0: 1/alpha
-THETA_TAU = ALP**(-ALP)  # asymptote of the tau=1 global-games locus
+ALP = 2 / 3                  # paper's benchmark alpha
+# C is the paper's c/A, not c: A never appears alone in any locus, because every threshold
+# solves "marginal benefit = marginal cost" and the A in the benefit cancels against the c
+# in the cost. Hence the paper's own "drawn for c/A = 1". See the package README note on
+# what this means if the model is ever extended to output or welfare *levels*.
+C = 1.0
+CV = model.theta_H(ALP)      # theta_H at mu=0 = 1/alpha, eq. (24)
+THETA_TAU = ALP**(-ALP)      # asymptote of the tau=1 global-games locus
 
 
 def lam_mu(th, alp=ALP, mu=0.0):
-    r"""$\Lambda_\mu = \left(\frac{\alpha\theta}{1-\mu(1-\alpha)}\right)^{1/(1-\alpha)}$, eq. (23).
-
-    Identical to `enclose.model.Lambda` (whose denominator $1-\mu+\alpha\mu$ is the same
-    quantity); duplicated here only so the locus layer stays importable without the model
-    layer. At $\mu=1$ this is $\Lambda_o = \theta^{1/(1-\alpha)}$, the planner's Lambda.
+    r"""$\Lambda_\mu$, eq. (23) — a defaults-carrying wrapper over `enclose.model.Lambda`,
+    which holds the one definition. At $\mu=1$ this is $\Lambda_o = \theta^{1/(1-\alpha)}$.
     """
-    return ((alp * th) / (1 - mu * (1 - alp)))**(1 / (1 - alp))
+    return model.Lambda(th, alp, mu)
 
 
 def lam0(th, alp=ALP):
@@ -154,8 +156,7 @@ def ln_gg_mu(th, alp=ALP, c=C, mu=0.0):
     """Global-games locus under partial commons governance mu. Reduces to `ln_gg(th, alp,
     c)` at mu=0 (verified numerically)."""
     th = np.asarray(th, dtype=float)
-    mu_denom = (1 - mu) * (1 - alp) + alp
-    lam = (alp * th / mu_denom)**(1 / (1 - alp))
+    lam = lam_mu(th, alp, mu)
     expr = (c / th) * (1 - lam) / (lam**alp - lam)
     return safe_log_power(expr, power=1 / alp)
 

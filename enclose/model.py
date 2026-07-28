@@ -59,12 +59,30 @@ def aplu(te, le, a=0.5, th=1.0, lbar=DEFAULT_LBAR / DEFAULT_TBAR):
 
 
 def Lambda(th, alp, mu):
-    r"""Key pivot term. Returns either the private or the planner's Lambda.
+    r"""Key pivot term, eq. (23). The single definition of $\Lambda_\mu$ in this package —
+    `enclose.loci.lam_mu` delegates here rather than re-deriving it.
+
+    $$\Lambda_\mu = \left(\frac{\alpha\theta}{1-\mu(1-\alpha)}\right)^{\frac{1}{1-\alpha}}$$
 
     $$\mu = 0 \rightarrow \Lambda = (\alpha \theta)^\frac{1}{1-\alpha}$$
     $$\mu = 1 \rightarrow \Lambda_o = \theta^\frac{1}{1-\alpha}$$
+
+    The denominator is spelled as the appendix writes it, $1-\mu(1-\alpha)$; earlier code
+    carried three algebraically-equal spellings of this same quantity across three modules.
     """
-    return ((alp * th) / (1 - mu + alp * mu))**(1 / (1 - alp))
+    return ((alp * th) / (1 - mu * (1 - alp)))**(1 / (1 - alp))
+
+
+def theta_H(alp, mu=0.0):
+    r"""High-TFP threshold separating strategic complements from substitutes, eq. (24).
+
+    $$\theta_H^\mu = \frac{1}{\alpha} - \mu \cdot \frac{1-\alpha}{\alpha}$$
+
+    Equivalently the $\theta$ at which $\Lambda_\mu = 1$. At $\mu=0$ this is $1/\alpha$;
+    at $\mu=1$ it is $1$. Single definition — `tepvt`, `tepvt_g` and the figure layer all
+    call this rather than re-spelling it.
+    """
+    return 1 / alp - mu * (1 - alp) / alp
 
 
 def req(te, th=1.0, alp=0.5, lbar=1.0, mu=0.0):
@@ -166,7 +184,7 @@ def tepvt(th, alp, c, lbar, mu):
     req(te) = rental rate. r(0)<c: no enclosure. r(1)>c: full enclosure.
     r(0)>c and r(1)<c: partial enclosure, solved from the FOC.
     """
-    thresh = 1 / alp - mu * (1 - alp) / alp
+    thresh = theta_H(alp, mu)
     lam = Lambda(th, alp, mu)
     r0 = req(0, th, alp, lbar, mu)
     r1 = req(1, th, alp, lbar, mu)
@@ -197,7 +215,7 @@ def tepvt_g(th, alp, c, lbar, mu):
     `mu` is threaded through to `tepvt` (a prior version hardcoded `mu=0` here regardless
     of the caller's `mu`, silently discarding it whenever `mu != 0`).
     """
-    thresh = (1 - mu * (1 - alp)) / alp
+    thresh = theta_H(alp, mu)
     tep = tepvt(th, alp, c, lbar, mu)
 
     tepg = tep
