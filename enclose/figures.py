@@ -302,14 +302,26 @@ def combined_4x4(mu=1.0, tau=1.0):
     """new_comp_fig4x4.png: four panels (a) mu=0,tau=0  (b) mu=1,tau=0  (c) mu=0,tau=1
     (d) mu=1,tau=1.
 
-    Source: Model_Construction.ipynb cell 91.
+    Source: Model_Construction.ipynb cell 91, with panel (d) rebuilt (see below).
 
-    Panel (d) is a placeholder, ported faithfully from the source: it draws the
-    planner/first-best band twice in two fill colors rather than a real combined
-    governance-and-compensation locus. No such locus is derived anywhere in either
-    codebase (see REORGANIZATION_PROPOSAL.md, Finding C) — deriving one is tracked as a
-    separate follow-up, decoupled from this migration so it doesn't block reproducing
-    what's currently published.
+    **Panel (d) now computes a real combined mu-and-tau locus.** The source cell had a
+    placeholder here — it drew the planner band twice in two fill colors, never computing
+    a decentralized curve at all. `online_appendix.md` eqs. 26-27 do close the loop: they
+    generalize the tau-only condition by replacing Lambda with Lambda_mu (eq. 23), giving
+    `ln_ld0`/`ln_ld1`'s joint (mu, tau) form.
+
+    At mu=1, tau=1 those loci coincide *exactly* with the planner's — Lambda_mu becomes
+    Lambda_o and the identity theta*Lambda_o^alpha = Lambda_o collapses the decentralized
+    denominator to the planner's. That is the paper's Key Result (online_appendix.md 5.3,
+    "the wedge closes when mu=1 AND tau=1") made concrete, and it is asserted in
+    `loci.sanity_checks()` and `tests/test_loci.py`. So the panel looks much as it did
+    before — but now because the two loci are computed and demonstrably equal, rather than
+    because the same band was drawn twice.
+
+    Domain note: `the_1` (1.1-2.1) sits entirely above theta_H^{mu=1} = 1 (eq. 24), so only
+    the boundary conditions of eq. 27 are needed. Extending below theta=1 would require a
+    combined-(mu, tau) global-games threshold, which is derived nowhere in the appendix or
+    the codebase — see `ln_gg`, which is tau-extended but mu=0 only.
     """
     start, finish, step = 1.1, 2.1, 0.01
     cv12 = ((1 - mu) * (1 - ALP) + ALP) / ALP
@@ -410,14 +422,28 @@ def combined_4x4(mu=1.0, tau=1.0):
     common_labels(cax, fontsize=12)
     style_axes(cax)
 
-    # ---- panel d: mu=1, tau=1 -- PLACEHOLDER, see docstring ----
+    # ---- panel d: mu=1, tau=1 ----
+    # The decentralized loci here are computed, not faked. They provably coincide with the
+    # planner's (see the docstring and loci.sanity_checks()), so the red curves land exactly
+    # on the black ones -- which is the panel's whole point: the wedge has closed.
     d = ax[1, 1]
     d.set_xlim(0.8, 2.15)
 
     d.plot(the_1, l01, color=COLOR_PLANNER_BLACK)
     d.plot(the_1, l11, color=COLOR_PLANNER_BLACK)
     fill_between_sorted(d, the_1, l01, l11, np.ones_like(the_1, bool), alpha=REGION_ALPHA, color="C0")
-    fill_between_sorted(d, the_1, l01, l11, np.ones_like(the_1, bool), alpha=REGION_ALPHA, color="C3")
+
+    l0dmutau = loci.ln_ld0(the_1, tau=tau, mu=mu)
+    l1dmutau = loci.ln_ld1(the_1, tau=tau, mu=mu)
+    # Dashed, unlike the solid decentralized loci in panels (a)-(c): at mu=tau=1 these sit
+    # exactly on the black planner curves, and a solid red line would hide them entirely --
+    # leaving a reader unable to see the coincidence that is the panel's whole point. The
+    # dashes let the black show through. (No gg locus is drawn in this panel, so there is
+    # no clash with the dashed-red gg convention used elsewhere in the figure.)
+    d.plot(the_1, l0dmutau, color=COLOR_DECENTRALIZED, linestyle=(0, (6, 6)), linewidth=2)
+    d.plot(the_1, l1dmutau, color=COLOR_DECENTRALIZED, linestyle=(0, (6, 6)), linewidth=2)
+    fill_between_sorted(d, the_1, l0dmutau, l1dmutau, np.ones_like(the_1, bool),
+                        alpha=REGION_ALPHA, color="C3")
 
     d.axvline(1, ymax=0.95, linestyle=LINESTYLE_THRESHOLD, color="black")
 

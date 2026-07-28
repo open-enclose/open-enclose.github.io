@@ -83,9 +83,19 @@ def test_ld1_tau_matches_independent_nu_derivation():
         np.testing.assert_allclose(loci.ln_ld1(th, tau=tau), nu_ld1, equal_nan=True)
 
 
-def test_ld0_mu_reduces_to_ld0_at_mu_zero():
+def test_ld0_mu_matches_independent_cell91_derivation():
+    """ln_ld0's mu parameter matches Model_Construction.ipynb cell 91's independently
+    hand-derived `expr_pd0mu`, transcribed fresh here.
+
+    Note cell 91 writes this in an asymmetric form (Lambda_mu outside the 1/alpha power,
+    the rest inside) and applies power=1.0; that is algebraically the same as the
+    consolidated form, and this test is what pins that down.
+    """
     th = np.linspace(0.85, CV - 1e-6, 50)
-    np.testing.assert_allclose(loci.ln_ld0_mu(th, mu=0.0), loci.ln_ld0(th))
+    for mu in (0.0, 0.4, 1.0):
+        mu_denom = (1 - mu) * (1 - ALP) + ALP
+        expr = (1 / (ALP * th / mu_denom)**(1 / (1 - ALP))) * (C / th * 1 / (1 - ALP))**(1 / ALP)
+        np.testing.assert_allclose(loci.ln_ld0_mu(th, mu=mu), np.log(expr))
 
 
 def test_gg_mu_reduces_to_gg_at_mu_zero():
@@ -93,13 +103,45 @@ def test_gg_mu_reduces_to_gg_at_mu_zero():
     np.testing.assert_allclose(loci.ln_gg_mu(th, mu=0.0), loci.ln_gg(th))
 
 
-def test_ld1_mu_is_invariant_to_mu():
-    """The r(1)=c condition doesn't involve the governance wedge -- ln_ld1_mu should be
-    flat in mu (source: cell 91 sets ln_l1dmu = ln_l1d.copy())."""
+def test_ld1_is_invariant_to_mu_at_tau_zero():
+    """At tau=0 the general form's Lambda_mu^alpha cancels top and bottom, leaving no mu --
+    which is why cell 91 could legitimately write `ln_l1dmu = ln_l1d.copy()`."""
     th = np.linspace(0.85, CV - 1e-6, 50)
-    base = loci.ln_ld1_mu(th, mu=0.0)
+    base = loci.ln_ld1(th, tau=0.0, mu=0.0)
     for mu in (0.3, 0.6, 1.0):
-        np.testing.assert_allclose(loci.ln_ld1_mu(th, mu=mu), base)
+        np.testing.assert_allclose(loci.ln_ld1(th, tau=0.0, mu=mu), base)
+
+
+def test_ld1_is_not_invariant_to_mu_when_tau_positive():
+    """Guard against over-reading the tau=0 invariance above: once tau>0 the cancellation
+    no longer happens and mu genuinely moves the locus."""
+    th = np.linspace(1.2, 2.0, 50)
+    a = loci.ln_ld1(th, tau=0.5, mu=0.0)
+    b = loci.ln_ld1(th, tau=0.5, mu=1.0)
+    assert not np.allclose(a, b, equal_nan=True)
+
+
+def test_wedge_closes_exactly_at_mu_one_tau_one():
+    """The paper's Key Result (online_appendix.md 5.3): at mu=1 AND tau=1 the decentralized
+    loci don't merely approach the planner's -- they coincide exactly.
+
+    At mu=1, Lambda_mu = theta^(1/(1-alpha)) = Lambda_o, and theta*Lambda_o^alpha =
+    Lambda_o collapses the decentralized denominator (1-alpha)(theta*Lambda_mu^alpha - tau)
+    to the planner's (Lambda_o - 1)(1-alpha). This is what panel (d) of new_comp_fig4x4.png
+    now actually plots, instead of drawing the planner band twice.
+    """
+    th = np.linspace(1.1, 2.1, 200)
+    np.testing.assert_allclose(loci.ln_ld0(th, tau=1.0, mu=1.0), loci.ln_l01(th))
+    np.testing.assert_allclose(loci.ln_ld1(th, tau=1.0, mu=1.0), loci.ln_l11(th))
+
+
+def test_wedge_is_open_when_only_one_of_mu_tau_is_one():
+    """The closure is genuinely joint -- neither mu=1 alone nor tau=1 alone suffices.
+    Without this, the test above would pass for the wrong reason."""
+    th = np.linspace(1.2, 2.0, 50)
+    planner = loci.ln_l01(th)
+    assert not np.allclose(loci.ln_ld0(th, tau=0.0, mu=1.0), planner, equal_nan=True)
+    assert not np.allclose(loci.ln_ld0(th, tau=1.0, mu=0.0), planner, equal_nan=True)
 
 
 def test_monopoly_locus_matches_source_cell():

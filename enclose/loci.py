@@ -27,9 +27,19 @@ CV = 1 / ALP      # theta_H at mu=0: 1/alpha
 THETA_TAU = ALP**(-ALP)  # asymptote of the tau=1 global-games locus
 
 
+def lam_mu(th, alp=ALP, mu=0.0):
+    r"""$\Lambda_\mu = \left(\frac{\alpha\theta}{1-\mu(1-\alpha)}\right)^{1/(1-\alpha)}$, eq. (23).
+
+    Identical to `enclose.model.Lambda` (whose denominator $1-\mu+\alpha\mu$ is the same
+    quantity); duplicated here only so the locus layer stays importable without the model
+    layer. At $\mu=1$ this is $\Lambda_o = \theta^{1/(1-\alpha)}$, the planner's Lambda.
+    """
+    return ((alp * th) / (1 - mu * (1 - alp)))**(1 / (1 - alp))
+
+
 def lam0(th, alp=ALP):
     r"""$\Lambda$ at $\mu=0$: $(\alpha\theta)^{1/(1-\alpha)}$."""
-    return (alp * th)**(1 / (1 - alp))
+    return lam_mu(th, alp, mu=0.0)
 
 
 # ---------------------------------------------------------------------------
@@ -48,24 +58,36 @@ def ln_l11(th, alp=ALP, c=C):
 
 
 # ---------------------------------------------------------------------------
-# Decentralized (mu=0) loci, tau-extended
+# Decentralized loci, jointly extended by governance (mu) and compensation (tau)
+#
+# Both take the general form of eq. (27)'s enclosure condition
+#   r_mu^e(t_e) - tau * r_mu^c(t_e) - c >= 0
+# solved at the two boundaries t_e = 0 and t_e = 1, with Lambda_mu (eq. 23) in place of
+# Lambda. Valid above theta_H^mu = 1/alpha - mu(1-alpha)/alpha (eq. 24); below that the
+# strategic-complements branch applies instead (`ln_gg`, mu=0 only -- see its docstring).
 # ---------------------------------------------------------------------------
 
-def ln_ld0(th, alp=ALP, c=C, tau=0.0):
-    r"""Decentralized r(0)=c locus, eq. (14), extended by compensation $\tau$ (eq. 23).
+def ln_ld0(th, alp=ALP, c=C, tau=0.0, mu=0.0):
+    r"""Decentralized r(0)=c locus, eq. (14), extended by $\mu$ and $\tau$ (eqs. 23, 26-27).
 
-    Verified equal, at every tau tested including tau=0, to both
+    $$\bar l_0 = \left[\frac{c}{(1-\alpha)(\theta\Lambda_\mu^\alpha - \tau)}\right]^{1/\alpha}$$
+
+    Reduces to the separately-derived special cases already in the codebase: to
     `generate_trajectories_figure.py`'s `ln_ld0` and `Model_Construction.ipynb` cell 91's
-    `nu`-parameterized `expr_pd0nu` — three independent derivations of the same condition.
+    `expr_pd0nu` at $\mu=0$, and to cell 91's `expr_pd0mu` at $\tau=0$ — see
+    `tests/test_loci.py`.
     """
-    lam = lam0(th, alp)
+    lam = lam_mu(th, alp, mu)
     expr = c / ((1 - alp) * (th * lam**alp - tau))
     return safe_log_power(expr, power=1 / alp)
 
 
-def ln_ld1(th, alp=ALP, c=C, tau=0.0):
-    """Decentralized r(1)=c locus, eq. (15), extended by tau."""
-    lam = lam0(th, alp)
+def ln_ld1(th, alp=ALP, c=C, tau=0.0, mu=0.0):
+    r"""Decentralized r(1)=c locus, eq. (15), extended by $\mu$ and $\tau$.
+
+    $$\bar l_1 = \left[\frac{c\,\Lambda_\mu^\alpha}{(1-\alpha)(\theta\Lambda_\mu^\alpha - \tau)}\right]^{1/\alpha}$$
+    """
+    lam = lam_mu(th, alp, mu)
     expr = c * lam**alp / ((1 - alp) * (th * lam**alp - tau))
     return safe_log_power(expr, power=1 / alp)
 
@@ -104,24 +126,28 @@ def ln_lc0(th, alp=ALP, c=C):
 
 
 # ---------------------------------------------------------------------------
-# mu-extended decentralized loci (partial commons governance, eq. 23/24)
+# mu-only convenience wrappers (partial commons governance, eq. 23/24)
+#
+# These now delegate to the jointly-extended ln_ld0/ln_ld1 above rather than carrying
+# their own copy of the algebra; kept as named entry points because the mu-only case is
+# what panel (b) of the 2x2 figure plots. Cross-checked against Model_Construction.ipynb
+# cell 91's independently-derived forms in tests/test_loci.py.
 # ---------------------------------------------------------------------------
 
 def ln_ld0_mu(th, alp=ALP, c=C, mu=0.0):
-    """Decentralized r(0)=c locus under partial commons governance mu. Reduces to
-    `ln_ld0(th, alp, c)` at mu=0 (verified numerically)."""
-    th = np.asarray(th, dtype=float)
-    mu_denom = (1 - mu) * (1 - alp) + alp
-    expr = (1 / (alp * th / mu_denom)**(1 / (1 - alp))) * (c / th * 1 / (1 - alp))**(1 / alp)
-    return safe_log_power(expr, power=1.0)
+    """Decentralized r(0)=c locus under partial commons governance mu."""
+    return ln_ld0(th, alp, c, tau=0.0, mu=mu)
 
 
 def ln_ld1_mu(th, alp=ALP, c=C, mu=0.0):
-    """Decentralized r(1)=c locus — invariant to mu. The r(1)=c condition doesn't involve
-    the governance wedge (source: `Model_Construction.ipynb` cell 91 sets `ln_l1dmu =
-    ln_l1d.copy()`); kept as its own name to make that invariance visible rather than
-    silently reusing `ln_ld1` at every call site."""
-    return ln_ld1(th, alp, c, tau=0.0)
+    r"""Decentralized r(1)=c locus under governance mu — invariant to mu.
+
+    The invariance is not asserted by hand here; it falls out of the algebra. At $\tau=0$
+    the general form's $\Lambda_\mu^\alpha$ cancels top and bottom, leaving
+    $\bar l_1 = [c/((1-\alpha)\theta)]^{1/\alpha}$ with no $\mu$ in it — which is why
+    `Model_Construction.ipynb` cell 91 could legitimately write `ln_l1dmu = ln_l1d.copy()`.
+    """
+    return ln_ld1(th, alp, c, tau=0.0, mu=mu)
 
 
 def ln_gg_mu(th, alp=ALP, c=C, mu=0.0):
@@ -178,6 +204,18 @@ def sanity_checks():
     ws_gg = ln_gg(np.array([1.0]))[0]
     assert 0.9 < ws_gg, "Weitzman-Samuelson point must lie below lbar_gg^d"
     print("OK: annotation reference points verified against their loci")
+
+    # The paper's Key Result (online_appendix.md 5.3): the decentralized-vs-planner wedge
+    # closes when mu=1 AND tau=1. At mu=1, Lambda_mu = theta^(1/(1-alpha)) = Lambda_o, and
+    # the identity theta*Lambda_o^alpha = Lambda_o collapses the decentralized denominator
+    # to the planner's -- so the two loci don't merely converge, they coincide exactly.
+    th4 = np.linspace(1.1, 2.1, 300)
+    assert np.allclose(ln_ld0(th4, tau=1.0, mu=1.0), ln_l01(th4)), \
+        "at mu=tau=1 the decentralized r(0)=c locus must equal the planner's"
+    assert np.allclose(ln_ld1(th4, tau=1.0, mu=1.0), ln_l11(th4)), \
+        "at mu=tau=1 the decentralized r(1)=c locus must equal the planner's"
+    print("OK: mu=1, tau=1 decentralized loci coincide exactly with the planner's "
+          "(the wedge closes -- online_appendix.md 5.3)")
 
 
 if __name__ == "__main__":
