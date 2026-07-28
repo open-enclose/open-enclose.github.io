@@ -37,6 +37,10 @@ APPENDIX_TARGETS = [
      dict(te=0.5, th=1.6, alp=0.5, mu=0.5), 110),
     ("labor_misallocation.png", figures.labor_misallocation,
      dict(te=0.5, alp=0.5, th=1.5, lbar=1.0, mu=0.0), 110),
+    ("manufacturing_equilibrium.png", figures.manufacturing_equilibrium,
+     dict(te_values=(0.0, 1.0), th=1.0, alp=0.4, b=0.7), 100),
+    ("structural_transformation.png", figures.structural_transformation,
+     dict(alp=0.5, mu=0.0, b=0.5), 100),
 ]
 
 

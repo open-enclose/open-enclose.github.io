@@ -717,3 +717,106 @@ def labor_misallocation(te=0.5, alp=0.5, th=1.0, lbar=1.0, mu=0.0, ax=None):
         ax.annotate(lab, (x, y), textcoords="offset points", xytext=(-5, 7),
                     ha="center", fontsize=12)
     return fig, ax
+
+
+# ---------------------------------------------------------------------------
+# Manufacturing / structural transformation (content/03-manufacturing.md)
+# ---------------------------------------------------------------------------
+
+def manufacturing_equilibrium(te_values=(0.0, 1.0), th=1.0, alp=0.4, b=0.7,
+                              tbar=1.0, kb=1.0, p=1.0):
+    r"""Labor market equilibrium with a manufacturing sector, before and after enclosure.
+
+    One panel per value of `te`. In each, $MPL_m$ falls in $l_m$ while $MPL_a$ rises, so
+    they cross exactly once — that single crossing is what makes the equilibrium unique and
+    the bracketed solve safe.
+
+    Both the open-access ($\mu=0$) and planner ($\mu=1$) agricultural curves are drawn, each
+    with its *own* equilibrium marked. The source notebook's `pl()` drew one agricultural
+    curve at the chosen $\mu$ but marked the $\mu=0$ and $\mu=1$ equilibria on it, so at
+    intermediate $\mu$ the marked points did not lie on the drawn curve; drawing both curves
+    is the reading that makes the private-vs-planner comparison consistent.
+    """
+    from . import manufacturing as mfg
+
+    n = len(te_values)
+    fig, axes = plt.subplots(1, n, figsize=(6 * n, 5), squeeze=False)
+    lm = np.linspace(0.005, 0.995, 400)
+
+    for ax, te in zip(axes[0], te_values):
+        ax.plot(lm, mfg.mpl_m(lm, p, kb, b), color="k", linewidth=2, label=r"$MPL_m$")
+        # mu=1 dashed: at te=0 no land is enclosed, so mu is irrelevant and the two
+        # agricultural curves coincide exactly -- a solid line would hide one of them.
+        for mu, colour, dash, name in (
+            (0.0, COLOR_DECENTRALIZED, "-", r"$MPL_a$, open access $\mu=0$"),
+            (1.0, COLOR_PLANNER_BLUE, (0, (6, 4)), r"$MPL_a$, planner $\mu=1$"),
+        ):
+            ax.plot(lm, mfg.mpl_a(lm, te, tbar, alp, th, mu), color=colour,
+                    linewidth=2, linestyle=dash, label=name)
+            star = mfg.labor_share(te, b=b, alp=alp, th=th, tbar=tbar, kb=kb, p=p, mu=mu)
+            w = mfg.mpl_m(star, p, kb, b)
+            ax.scatter(star, w, color=colour, zorder=6, s=45)
+            ax.vlines(star, 0, w, color=colour, linestyle=":", linewidth=1)
+            # Label beside the marker rather than on the axis, where the two values would
+            # collide with each other and with the tick labels when the equilibria are close.
+            ax.annotate(rf"$l_m={star:.2f}$", (star, w), textcoords="offset points",
+                        xytext=(10, 8), ha="left", fontsize=10, color=colour)
+
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 2)
+        ax.set_xlabel(r"$l_m$  (labor share in manufacturing)", fontsize=12)
+        ax.set_ylabel(r"wage / $MPL$", fontsize=12)
+        ax.set_title(rf"$t_e={te:g}$", fontsize=13)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.legend(fontsize=9, loc="upper right", framealpha=0.95)
+
+    fig.tight_layout()
+    return fig, axes[0]
+
+
+def structural_transformation(alp=0.5, mu=0.0, b=0.5, tbar=1.0, kb=1.0, p=1.0):
+    r"""How enclosure shifts labor into or out of manufacturing — and where it reverses.
+
+    $MPL_a$ carries $\left(1+(\Lambda_\mu-1)t_e\right)^{1-\alpha}$, so the sign of
+    $\partial l_m/\partial t_e$ is the sign of $(\Lambda_\mu-1)$ — and $\Lambda_\mu=1$
+    exactly at $\theta_H^\mu$. Below that threshold enclosure releases labor to
+    manufacturing; above it, labor is pulled back into agriculture; at it, enclosure moves
+    no labor at all.
+    """
+    from . import manufacturing as mfg
+
+    th_H = model.theta_H(alp, mu)
+    thetas = [th_H - 0.8, th_H - 0.2, th_H, th_H + 0.5, th_H + 1.5]
+    te = np.linspace(0, 1, 60)
+
+    fig, ax = plt.subplots(figsize=(7.5, 5.5))
+    cmap = plt.get_cmap("coolwarm")
+    for i, th in enumerate(thetas):
+        shares = [mfg.labor_share(t, b=b, alp=alp, th=th, tbar=tbar, kb=kb, p=p, mu=mu)
+                  for t in te]
+        at_threshold = np.isclose(th, th_H)
+        ax.plot(te, shares,
+                color="k" if at_threshold else cmap(i / (len(thetas) - 1)),
+                linewidth=3 if at_threshold else 2,
+                linestyle="--" if at_threshold else "-",
+                label=rf"$\theta={th:.1f}$" + (r"  $=\theta_H$" if at_threshold else ""))
+
+    ax.set_xlim(0, 1)
+    ax.set_xlabel(r"$t_e$  (share of land enclosed)", fontsize=12)
+    ax.set_ylabel(r"$l_m$  (labor share in manufacturing)", fontsize=12)
+    ax.set_title(r"Enclosure and structural transformation: the effect reverses at "
+                 rf"$\theta_H={th_H:g}$", fontsize=12)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.legend(fontsize=10, loc="best")
+    # Annotation colours match the curves they describe: the coolwarm map puts the low-theta
+    # (rising) curves at the blue end and the high-theta (falling) ones at the red end.
+    ax.annotate(r"$\theta<\theta_H$: enclosure releases" "\n" "labor to manufacturing",
+                xy=(0.70, 0.90), xycoords="axes fraction", ha="center", fontsize=10,
+                style="italic", color="darkblue")
+    ax.annotate(r"$\theta>\theta_H$: enclosure pulls" "\n" "labor back to agriculture",
+                xy=(0.70, 0.12), xycoords="axes fraction", ha="center", fontsize=10,
+                style="italic", color="darkred")
+    fig.tight_layout()
+    return fig, ax

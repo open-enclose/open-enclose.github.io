@@ -86,3 +86,44 @@ def test_labor_misallocation_wedge_is_nonempty_and_correctly_ordered():
     decentralized = model.le(te, th, alp, mu=0)
     efficient = model.leo(te, th, alp)
     assert decentralized < efficient
+
+
+@pytest.mark.parametrize("fn,kwargs", [
+    (figures.manufacturing_equilibrium, dict(te_values=(0.0, 1.0), th=1.0, alp=0.4, b=0.7)),
+    (figures.structural_transformation, dict(alp=0.5, mu=0.0, b=0.5)),
+])
+def test_manufacturing_figure_builds(fn, kwargs):
+    fig, ax = fn(**kwargs)
+    assert fig is not None and ax is not None
+    plt.close(fig)
+
+
+def test_manufacturing_figure_reproduces_the_drafts_headline_example():
+    """enclosure_manuf.md's worked example: at theta=1, alpha=0.4, beta=0.7, enclosing all
+    land raises manufacturing's labor share from "about 20 percent" to "almost 70 percent"
+    while the wage falls -- the Weitzman/Samuelson effect.
+
+    Pinning it guards the port against drifting away from the source material the
+    manufacturing page is written around.
+    """
+    from enclose import manufacturing as mfg
+    kw = dict(b=0.7, alp=0.4, th=1.0, tbar=1.0, kb=1.0, p=1.0, mu=0.0)
+
+    lm_open = mfg.labor_share(te=0.0, **kw)
+    lm_enclosed = mfg.labor_share(te=1.0, **kw)
+    assert lm_open == pytest.approx(0.20, abs=0.01)
+    assert lm_enclosed == pytest.approx(0.68, abs=0.01)
+
+    w_open = mfg.mpl_m(lm_open, p=1.0, kb=1.0, b=0.7)
+    w_enclosed = mfg.mpl_m(lm_enclosed, p=1.0, kb=1.0, b=0.7)
+    assert w_enclosed < w_open, "the Weitzman/Samuelson wage fall"
+
+
+def test_planner_allocation_is_unmoved_by_enclosure_when_theta_is_one():
+    """The sharp version of the same point: at theta=1 the planner's Lambda_o = 1, so
+    enclosure shifts no labor at all under mu=1 -- the entire decentralized shift is the
+    commons distortion, not a productivity effect."""
+    from enclose import manufacturing as mfg
+    kw = dict(b=0.7, alp=0.4, th=1.0, tbar=1.0, kb=1.0, p=1.0, mu=1.0)
+    assert model.Lambda(1.0, 0.4, 1.0) == pytest.approx(1.0)
+    assert mfg.labor_share(te=0.0, **kw) == pytest.approx(mfg.labor_share(te=1.0, **kw))
