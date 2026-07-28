@@ -15,6 +15,7 @@ dependencies = [
     "numpy",
     "matplotlib",
     "sympy",     # enclose.symbolic -- the derivations the numeric layer is checked against
+    "scipy",     # enclose.manufacturing -- the 3-sector equilibrium has no closed form
 ]
 
 [project.optional-dependencies]

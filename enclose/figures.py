@@ -601,3 +601,119 @@ def trajectories():
     _traj_panel_b(axb)
     fig.tight_layout(w_pad=3.0)
     return fig, (axa, axb)
+
+
+# ---------------------------------------------------------------------------
+# Explanatory figures for the online appendix -- not in the paper's set of 8.
+# These fill placeholders the appendix already numbers but never had generators for.
+# Ported from enclosure_book/notebooks/enclose.py (plotle, plotmpts).
+# ---------------------------------------------------------------------------
+
+def labor_reaction(te=0.5, th=1.0, alp=0.5, mu=0.5, ax=None):
+    r"""Appendix Figure 5: the labor reaction function $l_e(t_e)$ under varying $\mu$.
+
+    The single most useful explanatory graph for the extended model: it shows what
+    $\Lambda_\mu$ actually *does*. The 45-degree line is $l_e = t_e$ (labor and land
+    enclosed in equal proportion); a curve above it means the enclosed sector is
+    labor-intensive relative to the economy, below it means labor-extensive.
+
+    Three curves are drawn — open access ($\mu=0$), planner ($\mu=1$), and the chosen
+    intermediate $\mu$ — with the allocation at the given `te` marked on each, so the
+    governance wedge is visible as the vertical gap.
+
+    Source: `plotle` in the old enclose.py, restructured to accept `ax` for composition.
+    """
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(6, 6))
+    else:
+        fig = ax.figure
+
+    tte = np.linspace(0, 1, 200)
+    leq = model.le(te, th, alp, mu=0)      # open access
+    leop = model.le(te, th, alp, mu=1)     # planner
+    lemu = model.le(te, th, alp, mu)       # chosen mu
+
+    ax.plot(tte, model.le(tte, th, alp, mu=0), linewidth=2, color="b")
+    ax.plot(tte, model.le(tte, th, alp, mu=1), linewidth=2, color="r")
+    ax.plot(tte, model.le(tte, th, alp, mu), linewidth=2, color="g")
+    ax.plot([0, 1], [0, 1], linestyle=":", color="grey")
+
+    ax.scatter(te, leop, color="r", zorder=5, label=r"Planner, $\mu=1$")
+    ax.scatter(te, leq, color="b", zorder=5, label=r"Open access, $\mu=0$")
+    ax.scatter(te, lemu, color="g", zorder=5,
+               label=r"Regulated commons, $\mu$" + f"={mu}")
+
+    for y in (leq, leop):
+        ax.plot([0, te], [y, y], linestyle=":", color="grey", linewidth=1)
+    ax.plot([te, te], [0, max(leq, leop)], linestyle=":", color="grey", linewidth=1)
+
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.set_aspect("equal", "box")
+    ax.set_title(r"Labor reaction $l_e(t_e)$"
+                 + f"   ($\\theta$={th}, $\\alpha$={alp})", fontsize=12)
+    ax.set_xlabel(r"$t_e$", fontsize=15)
+    ax.set_ylabel(r"$l_e$", fontsize=15)
+    ax.legend(loc="upper left", fontsize=9)
+    return fig, ax
+
+
+def labor_misallocation(te=0.5, alp=0.5, th=1.0, lbar=1.0, mu=0.0, ax=None):
+    r"""Appendix Figure 4: MPL/APL and the labor misallocation wedge.
+
+    Labor on the commons enters until the *average* product equals the wage, not the
+    marginal product, so $MP_L^c$ sits below $MP_L^e$ and the hatched area between them is
+    the efficiency loss. Points A, C, E mark the open-access allocation, the commons wage,
+    and the efficient allocation.
+
+    Source: `plotmpts` in the old enclose.py, which carried
+    `TODO: not yet working for mu different from 0` — that caveat still stands and is
+    carried over rather than quietly dropped. `mu` shifts the decentralized allocation
+    `leam`, but the commons curves (`aplu`/`mplu`) take no `mu` argument, so the wage and
+    intersection geometry are only right at `mu=0`. Left as the default; a correct
+    `mu > 0` version is derivation work, not a port.
+    """
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(8, 6))
+    else:
+        fig = ax.figure
+
+    ll = np.linspace(0.0001, 0.9999, 400)
+    leop = model.leo(te, th, alp)          # efficient
+    leam = model.le(te, th, alp, mu)       # decentralized
+    we = model.weq(te, th, alp, lbar)
+    wo = model.mple(te, leop, alp, th, lbar)
+    wc = model.mplu(1 - te, 1 - leam, alp, 1, lbar)
+
+    ax.plot(ll, model.mple(te, ll, alp, th, lbar), linewidth=2, color="k")
+    ax.plot(ll, model.aplu(1 - te, 1 - ll, alp, 1, lbar), linewidth=2, color="k")
+    ax.plot(ll, model.mplu(1 - te, 1 - ll, alp, 1, lbar), linewidth=2, color="k")
+
+    ax.fill_between(ll, model.mple(te, ll, alp, th, lbar),
+                    model.mplu(1 - te, 1 - ll, alp, 1, lbar),
+                    where=(ll >= leam) & (ll <= leop),
+                    hatch="//", color="none", edgecolor="k")
+
+    ax.vlines(x=leam, ymin=0, ymax=we, linestyle=":")
+    ax.vlines(x=leop, ymin=0, ymax=wo, linestyle=":")
+    ax.axhline(we, linestyle=":")
+    ax.axhline(wc, linestyle=":")
+
+    ax.set_ylim(0, 1.5)
+    ax.set_xlim(0, 1)
+    ax.spines["top"].set_visible(False)
+    ax.annotate(r"$MP_L^c$", xy=(0.85, model.mplu(1 - te, 0.15, alp, 1, lbar)),
+                textcoords="offset points", xytext=(-30, 20), fontsize=14)
+    ax.annotate(r"$AP_L^c$", xy=(0.65, model.aplu(1 - te, 0.35, alp, 1, lbar)),
+                textcoords="offset points", xytext=(-24, 15), fontsize=14)
+    ax.annotate(r"$MP_L^e$", xy=(0.8, model.mple(te, 0.8, alp, th, lbar)),
+                textcoords="offset points", xytext=(20, -20), fontsize=14)
+
+    ax.set_xticks([0, leam, leop, 1],
+                  ["0", r"$l_e^*(t_e)$", r"$l_e^o(t_e)$", "1"], fontsize=13)
+
+    for x, y, lab in zip([leam, leam, leop], [wc, we, wo], ["A", "  C", "  E"]):
+        ax.scatter(x, y, marker="o", s=30, c="k", clip_on=False, zorder=5)
+        ax.annotate(lab, (x, y), textcoords="offset points", xytext=(-5, 7),
+                    ha="center", fontsize=12)
+    return fig, ax
