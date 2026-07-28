@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "enclose"
+version = "0.1.0"
+description = "Model code for 'A Model of Enclosures' (Baker and Conning)"
+authors = [
+    { name = "Mathew J. Baker" },
+    { name = "Jonathan Conning" },
+]
+requires-python = ">=3.9"
+dependencies = [
+    "numpy",
+    "matplotlib",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+include = ["enclose*"]
