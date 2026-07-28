@@ -14,14 +14,17 @@ project:
       affiliations:
         - hunter
   github: https://github.com/open-enclose/open-enclose.github.io
+  # Explicit table of contents. Without one, mystmd auto-discovers every markdown file in
+  # the project -- which would also publish TODO.md and anything left in archive/.
+  toc:
+    - file: README.md
+    - file: content/01-model.md
+    - file: content/02-figures.md
+    - file: content/03-manufacturing.md
+    - file: content/04-derivations.md
 site:
   template: book-theme
   title: A Model of Enclosures
-  nav:
-    - title: Home
-      file: README.md
-    - title: Model Construction
-      file: Model_Construction.ipynb
   options:
     hide_branding: true
     logo_text: "A model of enclosures"
