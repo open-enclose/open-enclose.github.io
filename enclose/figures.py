@@ -745,11 +745,12 @@ def manufacturing_equilibrium(te_values=(0.0, 1.0), th=1.0, alp=0.4, b=0.7,
 
     for ax, te in zip(axes[0], te_values):
         ax.plot(lm, mfg.mpl_m(lm, p, kb, b), color="k", linewidth=2, label=r"$MPL_m$")
-        # mu=1 dashed: at te=0 no land is enclosed, so mu is irrelevant and the two
-        # agricultural curves coincide exactly -- a solid line would hide one of them.
+        # At te=0 the two agricultural curves stand in the ratio alpha (open access pays
+        # the average product, the planner the marginal product); at te=1 there is no
+        # commons and they coincide exactly, so mu=1 is dashed to keep it visible there.
         for mu, colour, dash, name in (
-            (0.0, COLOR_DECENTRALIZED, "-", r"$MPL_a$, open access $\mu=0$"),
-            (1.0, COLOR_PLANNER_BLUE, (0, (6, 4)), r"$MPL_a$, planner $\mu=1$"),
+            (0.0, COLOR_DECENTRALIZED, "-", r"$w_a$, open access $\mu=0$"),
+            (1.0, COLOR_PLANNER_BLUE, (0, (6, 4)), r"$w_a$, planner $\mu=1$"),
         ):
             ax.plot(lm, mfg.mpl_a(lm, te, tbar, alp, th, mu), color=colour,
                     linewidth=2, linestyle=dash, label=name)
@@ -779,7 +780,8 @@ def structural_transformation(alp=0.5, mu=0.0, b=0.5, tbar=1.0, kb=1.0, p=1.0):
     r"""How enclosure shifts labor into or out of manufacturing — and where it reverses.
 
     $MPL_a$ carries $\left(1+(\Lambda_\mu-1)t_e\right)^{1-\alpha}$, so the sign of
-    $\partial l_m/\partial t_e$ is the sign of $(\Lambda_\mu-1)$ — and $\Lambda_\mu=1$
+    $\partial l_m/\partial t_e$ is the sign of $(1-\Lambda_\mu)$ (the equilibrium condition
+    inverts it: $l_m$ rises when the agricultural constant falls) — and $\Lambda_\mu=1$
     exactly at $\theta_H^\mu$. Below that threshold enclosure releases labor to
     manufacturing; above it, labor is pulled back into agriculture; at it, enclosure moves
     no labor at all.

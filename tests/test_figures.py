@@ -121,9 +121,21 @@ def test_manufacturing_figure_reproduces_the_drafts_headline_example():
 
 def test_planner_allocation_is_unmoved_by_enclosure_when_theta_is_one():
     """The sharp version of the same point: at theta=1 the planner's Lambda_o = 1, so
-    enclosure shifts no labor at all under mu=1 -- the entire decentralized shift is the
-    commons distortion, not a productivity effect."""
+    enclosure shifts no labor at all under mu=1 -- the decentralized shift is the commons
+    distortion, not a productivity effect.
+
+    Note where the planner sits, though: flat at ~0.68, which is where the decentralized
+    economy *ends up* under full enclosure, not where it starts. So enclosure here moves
+    the inter-sectoral allocation toward the optimum, and at te=1 reaches it exactly. (An
+    earlier version of the model put the planner flat at ~0.20 and supported the opposite
+    reading; that was the missing commons wedge -- see enclose/manufacturing.py.)
+    """
     from enclose import manufacturing as mfg
     kw = dict(b=0.7, alp=0.4, th=1.0, tbar=1.0, kb=1.0, p=1.0, mu=1.0)
     assert model.Lambda(1.0, 0.4, 1.0) == pytest.approx(1.0)
     assert mfg.labor_share(te=0.0, **kw) == pytest.approx(mfg.labor_share(te=1.0, **kw))
+
+    planner = mfg.labor_share(te=0.0, **kw)
+    decentralized = dict(kw, mu=0.0)
+    assert mfg.labor_share(te=0.0, **decentralized) < planner
+    assert mfg.labor_share(te=1.0, **decentralized) == pytest.approx(planner)
