@@ -18,19 +18,23 @@ This online appendix provides complete mathematical derivations for all numbered
 - Section 3: Benchmark Model (Equations 1-15)
 - Section 4: Social Efficiency Analysis (Equations 16-21)
 - Section 5: Extended Model with Institutions (Equations 22-27)
-- Section 6: Applications and Extensions (Equations 28-36)
+- Section 6: Applications and Extensions (Equations 28-43)
 - Appendix G: Computational Verification
 
 **Notation:**
 - $t_e$: share of land enclosed
 - $l_e$: share of labor in enclosed sector
-- $\bar{T}$, $\bar{L}$: total land and labor endowments
-- $\bar{l} = \bar{L}/\bar{T}$: population density
+- $l_c$, $l_m$: share of labor in the commons and in manufacturing (§6.4)
+- $\bar{T}$, $\bar{L}$, $\bar{K}$: total land, labor and (manufacturing) capital endowments
+- $\bar{l} = \bar{L}/\bar{T}$: population density; $\bar t = \bar T/\bar L$, $\bar k = \bar K/\bar L$ (§6.4)
 - $\alpha \in (0,1)$: labor share in Cobb-Douglas production
+- $\beta \in (0,1)$: labor share in manufacturing (§6.4)
 - $\theta > 0$: relative TFP gain in enclosed sector
+- $p > 0$: relative price of manufactures (§6.4)
 - $c > 0$: per-unit cost of enclosure
 - $A > 0$: base total factor productivity
 - $\mu \in [0,1]$: governance/regulation parameter
+- $A_\mu = 1-\mu(1-\alpha)$: share of the commons average product that labor retains, eq. (37)
 - $\tau \in [0,1]$: compensation/power parameter
 
 ---
@@ -1050,11 +1054,150 @@ The agricultural labor allocation becomes:
 
 $$l_e^\mu(t_e) = \frac{\Lambda_\mu t_e}{1+(\Lambda_\mu-1)t_e} \cdot (1-l_m) \qquad (36)$$
 
-**Note:** This extension is sketched but not fully developed in existing materials. The key insight is that manufacturing provides an outside option that can either facilitate or hinder property regime transitions depending on relative productivity levels.
+**Derivation:** The intra-agricultural condition is unchanged — equation (22) equalizes returns between enclosed land and the commons whatever else the economy contains — so the only modification is that the agricultural labor force is $(1-l_m)$ rather than $1$. Following the steps of (23) with $(1-l_m)$ in place of $1$ gives (36). The same expression with $\Lambda_o$ in place of $\Lambda_\mu$ is the planner's allocation, since $\mu=1$ gives $\Lambda_1=\Lambda_o$.
+
+Everything below is stated in intensive form with $\bar t = \bar T/\bar L$ and $\bar k = \bar K/\bar L$; factor-price levels carry the same density scaling as Section 3.
+
+---
+
+#### Equation (37): The Governance Wedge $A_\mu$
+
+Labor in the commons takes home the fraction
+
+$$A_\mu = 1 - \mu(1-\alpha), \qquad A_0 = 1, \quad A_1 = \alpha \qquad (37)$$
+
+of the commons average product.
+
+**Derivation:** From the Euler decomposition (8), $AP_L^c = MP_L^c + MP_T^c \cdot (T_c/L_c)$, with $MP_L^c = \alpha AP_L^c$ and hence $MP_T^c(T_c/L_c) = (1-\alpha)AP_L^c$. Equation (22) says a worker leaving the commons forfeits the fraction $\mu$ of those possession rents, retaining $(1-\mu)$. Total commons income per worker is therefore
+
+$$w_c = \alpha AP_L^c + (1-\mu)(1-\alpha)AP_L^c = [1-\mu(1-\alpha)]\,AP_L^c$$
+
+$\mu=0$ recovers open access, where labor captures the whole average product; $\mu=1$ gives the marginal product, which is the planner's valuation.
+
+$A_\mu$ is stated separately from $\Lambda_\mu$ because the two are not substitutes: $\Lambda_\mu$ governs the *slope* of the labor allocation, $A_\mu$ the *level* of what labor earns, and they enter subsequent expressions independently. The distinction is invisible in the two-sector model, where the level cannot affect an allocation that is agricultural regardless.
+
+---
+
+#### Equation (38): The Manufacturing Margin
+
+Labor moves between sectors until $p \cdot MP_L^m = \theta \cdot MP_L^e = w_c$. Substituting (36) into each side:
+
+$$\underbrace{p\beta\bar k^{1-\beta}}_{C_m} \cdot l_m^{-(1-\beta)} \;=\; \underbrace{A_\mu\,\bar t^{1-\alpha}\left(1+(\Lambda_\mu-1)t_e\right)^{1-\alpha}}_{C_a} \cdot (1-l_m)^{-(1-\alpha)} \qquad (38)$$
+
+**Derivation:** From (36), $1-l_m-l_e^\mu = (1-l_m)(1-t_e)/[1+(\Lambda_\mu-1)t_e]$, so
+
+$$AP_L^c = \bar t^{1-\alpha}\left(\frac{1-t_e}{1-l_m-l_e^\mu}\right)^{1-\alpha} = \bar t^{1-\alpha}\left(\frac{1+(\Lambda_\mu-1)t_e}{1-l_m}\right)^{1-\alpha}$$
+
+and $w_c = A_\mu \cdot AP_L^c$ by (37). Equivalently, working from the enclosed side, $\theta MP_L^e = \alpha\theta\,\bar t^{1-\alpha}(t_e/l_e^\mu)^{1-\alpha} = \alpha\theta\Lambda_\mu^{-(1-\alpha)}\bar t^{1-\alpha}(1+(\Lambda_\mu-1)t_e)^{1-\alpha}(1-l_m)^{-(1-\alpha)}$, and $\alpha\theta\Lambda_\mu^{-(1-\alpha)} = A_\mu$ by the definition of $\Lambda_\mu$ in (23). The two routes agree, as they must.
+
+Note that at $\mu=0$ the prefactor equals exactly $1$, so the agricultural side can be written compactly as $\bar t^{1-\alpha}(t_e/l_e^0)^{1-\alpha}$. That shorthand does not survive to $\mu>0$, where the prefactor is $A_\mu$ and not $1$.
+
+Two properties pin the level and serve as checks:
+
+- At $t_e=0$, $\Lambda_\mu$ drops out and $C_a = A_\mu\bar t^{1-\alpha}$, so the planner's and open-access curves differ by exactly $\alpha$ — one pays labor its average product, the other its marginal product.
+- At $t_e=1$ there is no commons, so $\mu$ cannot matter: $C_a = A_\mu\Lambda_\mu^{1-\alpha}\bar t^{1-\alpha} = \alpha\theta\,\bar t^{1-\alpha}$ for **every** $\mu$. Equivalently, full enclosure implements the planner's inter-sectoral labor allocation for any $\theta$ — conditional on $t_e$, a qualification equation (40) makes essential.
+
+---
+
+#### Equation (39): Equilibrium Manufacturing Share
+
+Rearranging (38):
+
+$$\frac{l_m^{1-\beta}}{(1-l_m)^{1-\alpha}} = \frac{C_m}{C_a} \qquad (39)$$
+
+**Existence and uniqueness.** The left side is continuous and strictly increasing on $(0,1)$, from $0$ to $\infty$. Hence (39) has exactly one solution for any $C_m/C_a > 0$: the equilibrium exists and is unique for all admissible parameters, and a bracketed root-finder on $(0,1)$ is guaranteed to converge.
+
+**Closed form when $\beta=\alpha$.** The exponents coincide and (39) becomes $\left(\frac{l_m}{1-l_m}\right)^{1-\alpha} = \frac{C_m}{C_a}$, so
+
+$$l_m = \frac{R}{1+R}, \qquad R = \left(\frac{C_m}{C_a}\right)^{\frac{1}{1-\alpha}}$$
+
+For $\beta\neq\alpha$ equation (39) is transcendental and has no elementary solution.
+
+**Comparative static in $t_e$.** $\partial C_a/\partial t_e$ has the sign of $(\Lambda_\mu-1)$. Because the left side of (39) is *increasing* in $l_m$, the manufacturing share rises exactly when $C_a$ falls, so
+
+$$\operatorname{sign}\left(\frac{\partial l_m}{\partial t_e}\right) = \operatorname{sign}(1-\Lambda_\mu)$$
+
+— the opposite sign, an inversion easily lost. By (24), $\Lambda_\mu=1$ exactly at $\theta_H^\mu$, so enclosure accelerates structural transformation below that threshold, retards it above, and moves no labor at all at it. The knife-edge is exact. Equation (41) tabulates the consequences; note that $\theta_H^\mu$ is the same threshold that separates strategic complements from substitutes in (24), a coincidence taken up there.
+
+---
+
+#### Equation (40): The Planner's Enclosure Margin
+
+Equations (36)–(39) condition on $t_e$. Restoring the planner's choice of $t_e$, and applying the envelope theorem — at the planner's allocation marginal products are already equal, so reallocating labor has no first-order effect and only the land-rent differential survives:
+
+$$\frac{dY}{dt_e} = (1-\alpha)\,\bar t^{1-\alpha}(\Lambda_o-1)\left(\frac{1-l_m(t_e)}{1+(\Lambda_o-1)t_e}\right)^{\alpha} \qquad (40)$$
+
+**Derivation:** $dY/dt_e = \theta F_T^e - F_T^c = (1-\alpha)\bar t^{1-\alpha}[\theta(l_e/t_e)^\alpha - (l_c/(1-t_e))^\alpha]$. Substituting (36) at $\mu=1$ gives $l_e/t_e = \Lambda_o(1-l_m)/D_o$ and $l_c/(1-t_e) = (1-l_m)/D_o$ with $D_o = 1+(\Lambda_o-1)t_e$, and $\theta\Lambda_o^\alpha = \Lambda_o^{1-\alpha}\Lambda_o^{\alpha} = \Lambda_o$.
+
+This is exactly $z'(t_e)$ from Section 3 with the *agricultural* labor share $(1-l_m)$ in place of the whole labor force. **Manufacturing changes the level but not the sign.**
+
+**Two thresholds, not one.** The sign of (40) is that of $(\Lambda_o - 1)$, i.e. of $(\theta-1)$ — note $\Lambda_o$, not $\Lambda_\mu$. This margin turns at $\theta=1$; the labor-allocation reversal of (39) turns at $\theta_H^\mu$. They answer different questions — *is enclosure worth doing* versus *which way does it push labor* — and must not be conflated. Below $\theta=1$ enclosure lowers output even at $c=0$; at $\theta=1$ (40) is identically zero; above it the planner encloses while (40) exceeds $c\,\bar t$.
+
+So $t_e^o=0$ for every $c>0$ whenever $\theta\le1$, however misallocated the decentralized economy's labor is at $t_e=0$. That full enclosure reproduces the planner's *labor* allocation does not make full enclosure optimal. At $\theta=1$ in particular, the whole gain from enclosure is the repair of the commons distortion, which regulating the commons ($\mu\to1$) achieves at $t_e=0$ without incurring $c\bar T$.
+
+---
+
+#### Equation (41): Three Regimes
+
+Since $\theta_H^\mu = [1-\mu(1-\alpha)]/\alpha$ from (24) and the enclosure margin turns at $\theta=1$,
+
+$$\theta_H^\mu - 1 = \frac{(1-\alpha)(1-\mu)}{\alpha} \;\geq\; 0, \qquad \text{with equality iff } \mu=1 \qquad (41)$$
+
+The two thresholds therefore bracket a band, and the parameter space divides into three regimes:
+
+| Regime | Range | Enclosure socially desirable? | Effect on structural transformation | Enclosure game |
+|:---|:---|:---|:---|:---|
+| A | $\theta<1$ | No (at any $c>0$) | Releases labor to manufacturing | Complements |
+| B | $1<\theta<\theta_H^\mu$ | Yes, if $c$ small enough | Releases labor to manufacturing | Complements |
+| C | $\theta>\theta_H^\mu$ | Yes, if $c$ small enough | Draws labor back into agriculture | Substitutes |
+
+Regime B is the configuration the conventional account of enclosure and industrialization presumes — enclosure both efficiency-improving and labor-releasing. By (41) its width is proportional to $(1-\mu)$, so **it exists only to the extent that the commons is poorly governed, and closes entirely at $\mu=1$.** It is also wider the larger is land's share $(1-\alpha)$. The conventional account is thus not a general property of enclosure but a feature of the open-access case, and one that yields an inverted comparative static: within B, the labor-release effect weakens as $\theta$ rises toward $\theta_H^\mu$, so enclosures delivering the *largest* productivity gains should release the *least* labor.
+
+**The last column is not an additional assumption.** By (12), $r_\mu(t_e)$ is increasing in $t_e$ exactly when $\Lambda_\mu<1$ — the condition for strategic complementarity, and hence for the multiplicity that (15) resolves. By (39) that is *also* exactly the condition for enclosure to release labor. The two are the same inequality because both turn on whether enclosed land is more or less labor-hungry than the commons. Hence:
+
+> Wherever enclosure accelerates structural transformation, the enclosure game admits multiple equilibria; wherever it retards structural transformation, the equilibrium is unique.
+
+Regimes A and B lie entirely inside the strategic-complements region and C entirely outside it. The enclosures relevant to industrialization are therefore precisely those whose extent is not pinned down by fundamentals alone.
+
+---
+
+#### Equation (42): Private Enclosure with Manufacturing and Compensation
+
+Equations (40)–(41) describe what the *planner* would do. Restoring the decentralized enclosure condition (27) in the presence of manufacturing:
+
+$$r_\mu^e(t_e) - \tau\,r_\mu^c(t_e) = (1-\alpha)A\bar l^\alpha\left(\frac{1-l_m(t_e)}{1+(\Lambda_\mu-1)t_e}\right)^{\alpha}\Big[\theta\Lambda_\mu^{\alpha} - \tau\Big] \qquad (42)$$
+
+**Derivation:** With manufacturing present, the enclosed and commons labor–land ratios are $L_e/T_e = \Lambda_\mu(1-l_m)\bar l/D_\mu$ and $L_c/T_c = (1-l_m)\bar l/D_\mu$, with $D_\mu = 1+(\Lambda_\mu-1)t_e$, by (36). Substituting into $r^e_\mu = \theta(1-\alpha)A(L_e/T_e)^\alpha$ and $r^c_\mu = (1-\alpha)A(L_c/T_c)^\alpha$ and collecting terms gives (42). The marginal encloser takes $l_m$ and the wage as given, so $l_m$ enters as a level, not through a strategic term.
+
+The factorization is worth pausing on. **Manufacturing enters only through $(1-l_m)^\alpha$** — a scale factor common to both rentals, reflecting that a smaller agricultural labor force lowers the land–labor ratio and hence both rents equally. **$\tau$ enters only the bracket.** The planner's counterpart, from (40), is the bracket $[\Lambda_o-1]$; since $\theta\Lambda_\mu^\alpha = \Lambda_\mu$ when $\mu=1$, private and social margins coincide exactly at $\mu=1$ **and** $\tau=1$, which is the condition stated in §5.3.
+
+---
+
+#### Equation (43): The Compensation Threshold
+
+From the bracket in (42), enclosure is privately profitable at some $c \geq 0$ if and only if
+
+$$\tau < \tau^*(\theta,\mu) = \theta\,\Lambda_\mu^{\alpha} = \theta^{\frac{1}{1-\alpha}}\left(\frac{\alpha}{A_\mu}\right)^{\frac{\alpha}{1-\alpha}} \qquad (43)$$
+
+$\tau^*$ is strictly increasing in both $\theta$ and $\mu$. The second is a second-best tension in its own right: better commons governance raises $\Lambda_\mu$ and hence the enclosed-land rent, so improving governance makes enclosure *harder* to deter by compensation, even as it makes deterrence more worthwhile.
+
+Setting $\tau^*=1$ and solving gives the range over which full compensation binds at all:
+
+$$\tau^*(\theta,\mu) \lessgtr 1 \iff \theta \lessgtr \left(\theta_H^\mu\right)^{\alpha}$$
+
+Since $\theta_H^\mu \geq 1$ and $\alpha<1$, this lies strictly between $1$ and $\theta_H^\mu$ and collapses to $1$ at $\mu=1$. Above it no admissible $\tau$ prevents enclosure, and compensation is a pure transfer with no allocative consequence. This splits regime B of (41) at $(\theta_H^\mu)^\alpha$ into a sub-range where a compensation requirement blocks enclosure and one where it does not.
+
+**$\tau$ moves neither threshold of (41).** Appearing in neither production nor the planner's objective, it cannot shift $\theta_H^\mu$ or the $\theta=1$ margin. Its role is to select *which $t_e$ is reached*, not what enclosure does once there: $\mu$ changes what enclosure would do, $\tau$ changes whether it happens.
+
+Consequently the two instruments are complements rather than substitutes, and $\partial Y/\partial \tau$ changes sign with $\mu$. Requiring compensation without regulating the commons removes the repair of the labor misallocation that enclosure was accomplishing; requiring it with a regulated commons prevents enclosure that would merely expend $c$. This is the claim of §5.3, now with a second margin on which it operates. Worked numerical illustrations are in `enclose/manufacturing.py`.
+
+*Caveat.* Any equilibrium $t_e$ computed from the marginal condition alone is incomplete for $\theta<\theta_H^\mu$, where (15)'s refinement is needed to select among multiple equilibria.
 
 ---
 
 *[End of Section 6]*
+
+*Interpretation of these results — the mapping from regimes to historical accounts of enclosure, the relation to dual-economy models, and the research agenda they suggest — is deliberately not developed here. See `notes/manuf_paper_ideas.md` in the project repository.*
 
 ---
 
@@ -1089,7 +1232,7 @@ The `enclose.py` module provides a complete computational implementation of the 
 | `z(te, th, alp, lbar)` | (5) | First-best output $z_1(t_e)$ | θ, α, $\bar{l}$ |
 | `zpv(te, th, alp, lbar)` | (17) | Second-best output $z_0(t_e)$ | θ, α, $\bar{l}$ |
 | `req(te, th, alp, lbar, mu)` | (12), (27) | Rental rate $r(t_e)$ or $r_\mu(t_e)$ | θ, α, $\bar{l}$, μ |
-| `weq(te, th, alp, lbar, mu)` | Labor equilibrium | Equilibrium wage | θ, α, $\bar{l}$, μ |
+| `weq(te, th, alp, lbar, mu)` | Labor equilibrium | Commons average product $AP_L^c(t_e)$. The **wage** is $A_\mu \cdot$ `weq`, per (37) — the two coincide only at $\mu=0$ | θ, α, $\bar{l}$, μ |
 | `zprime(te, th, alp, lbar, mu)` | (6), (7), (19), (20) | Marginal benefit $z'(t_e)$ or $z_0'(t_e)$ | θ, α, $\bar{l}$, μ |
 | `teopt(th, alp, c, lbar)` | Lemma 1 | Optimal enclosure rate (first-best) | θ, α, c, $\bar{l}$ |
 | `tepvt(th, alp, c, lbar, mu)` | Props 2-3 | Private enclosure rate | θ, α, c, $\bar{l}$, μ |
@@ -1097,6 +1240,28 @@ The `enclose.py` module provides a complete computational implementation of the 
 | `mple(te, le, a, th, lbar)` | Supporting | Marginal product of labor (enclosed) | |
 | `mpt(te, le, a, th, lbar)` | Supporting | Marginal product of land | |
 | `totalq(te, th, alp, lbar, mu)` | Supporting | Total economy output | |
+
+The three-sector extension of §6.4 lives in a separate module, `enclose/manufacturing.py`
+in the `open-enclose.github.io` repository, with tests in `tests/test_manufacturing.py`:
+
+| Python Function | Equations | Purpose | Key Parameters |
+|----------------|-----------|---------|----------------|
+| `commons_wedge(alp, mu)` | (37) | Governance wedge $A_\mu$ | α, μ |
+| `mpl_m(lm, p, kb, b)` | (38) | $MP_L^m$, manufacturing side | p, $\bar k$, β |
+| `mpl_a(lm, te, tbar, alp, th, mu)` | (38) | Agricultural return $A_\mu \cdot AP_L^c$ — a marginal product only at $\mu=1$ | α, θ, μ, $t_e$ |
+| `labor_share(te, ...)` | (39) | Equilibrium $l_m$, bracketed solve | all |
+| `labor_share_closed_form(te, ...)` | (39) | Exact $l_m$ at $\beta=\alpha$; used as a test oracle | all |
+| `agricultural_labor(te, ...)` | (36) | $l_e^\mu(t_e)$ with manufacturing present | θ, α, μ |
+| `total_output(te, ...)` | Supporting | $Y/\bar L$ at the equilibrium allocation, gross of $c$ | all |
+| `planner_marginal_benefit(te, ...)` | (40) | $dY/dt_e$ at the planner's allocation | α, θ, β, p |
+| `private_marginal_return(te, tau, ...)` | (42) | $r^e_\mu - \tau r^c_\mu$ with manufacturing | α, θ, β, μ, τ |
+| `compensation_threshold(th, alp, mu)` | (43) | $\tau^*(\theta,\mu)$ | α, θ, μ |
+
+Equation (37) is the correction most worth checking against: it was absent from earlier
+drafts of this material, which stated the $\mu=0$ shorthand of (38) as though it held for
+all $\mu$. `tests/test_manufacturing.py` pins it by verifying the planner's first-order
+conditions against the primitive derivatives of the objective, independently of any
+expression in §6.4.
 
 ---
 

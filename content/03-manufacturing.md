@@ -291,27 +291,14 @@ $$
 $$
 
 The two labor first-order conditions equate marginal value products across all three
-sectors, $p\,MPL_m = \theta\,MPL_e = MPL_u$. Taking them in turn:
+sectors, $p\,MPL_m = \theta\,MPL_e = MPL_u$. The first gives back the benchmark planner's
+reaction function scaled by $(1-l_m)$, with $\Lambda_o = \theta^{1/(1-\alpha)}$; the second,
+after substituting it, gives the agricultural side of the manufacturing margin as the
+general expression of §3 evaluated at $\mu=1$, where $A_1 = \alpha$. Both derivations are in
+[online appendix](04-derivations.md) §6.4, equations (36) and (38).
 
-$$
-\alpha\theta\left(\frac{t_e}{l_e}\right)^{1-\alpha}
-= \alpha\left(\frac{1-t_e}{1-l_m-l_e}\right)^{1-\alpha}
-\quad\Longrightarrow\quad
-l_e^o(t_e) = \frac{\Lambda_o t_e}{1+(\Lambda_o-1)t_e}(1-l_m),
-\qquad \Lambda_o = \theta^{\frac{1}{1-\alpha}}
-$$
-
-— the benchmark planner's reaction function, again scaled by $(1-l_m)$. Substituting it
-back gives the agricultural side of the manufacturing margin:
-
-$$
-\alpha\left(\frac{1-t_e}{1-l_m-l_e^o}\right)^{1-\alpha}
-= \alpha\,\bar t^{1-\alpha}\left(1+(\Lambda_o-1)t_e\right)^{1-\alpha}(1-l_m)^{-(1-\alpha)}
-$$
-
-which is the general expression of §3 at $\mu=1$, where $A_1 = \alpha$. The leading
-$\alpha$ is not decoration: without it the planner's labor demand is overstated by
-$1/\alpha$, the two curves in the §4 figure coincide in the *left* panel instead of the
+That leading $\alpha$ is not decoration. Without it the planner's labor demand is overstated
+by $1/\alpha$, the two curves in the §4 figure coincide in the *left* panel instead of the
 right, and the comparison in §4 comes out backwards.
 
 The third first-order condition, in $T_e$, is the enclosure margin — that is §5, where the
