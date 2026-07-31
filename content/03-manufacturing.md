@@ -101,6 +101,75 @@ $$
 That special case is worth keeping in view: it is the only fully solvable version, and it
 serves as an exact check on the numerical solver used everywhere else.
 
+### The constant-wage limit ($\beta \to 1$)
+
+The specification above gives manufacturing a fixed capital stock, so $MPL_m$ falls in $l_m$
+and the wage stays endogenous. The opposite benchmark — manufacturing as a constant-returns
+sector absorbing unlimited labor at a fixed wage — is the $\beta \to 1$ corner of this same
+model. It is worth working out, because it isolates exactly which results depend on the wage
+being free to move.
+
+At $\beta = 1$ the manufacturing side of the margin loses its $l_m$:
+$C_m\,l_m^{-(1-\beta)} \to p\,\theta_M \equiv \bar w$. The equilibrium condition stops being
+a crossing condition and becomes a level condition on agriculture alone:
+
+$$
+(1-l_m)^{1-\alpha} = \frac{C_a}{\bar w},
+\qquad
+C_a = A_\mu\,\bar t^{1-\alpha}\left(1+(\Lambda_\mu-1)t_e\right)^{1-\alpha}
+$$
+
+Agricultural employment no longer clears against manufacturing; it is pinned by $\bar w$ and
+moves one-for-one with $C_a$ as land is enclosed, with manufacturing absorbing the residual.
+(Interior only while $C_a \le \bar w$; a low enough $\bar w$ drives $l_m$ to zero and returns
+the economy to the two-sector benchmark.)
+
+**What it does to labor intensities.** From the reaction function of §2, unenclosed labor per
+unit of unenclosed land is
+
+$$
+\frac{L_u}{T_u} = \bar l\,\frac{1-l_m}{1+(\Lambda_\mu-1)t_e}
+$$
+
+and the condition above gives $(1-l_m) \propto \left(1+(\Lambda_\mu-1)t_e\right)$. The two
+factors cancel exactly: $L_u/T_u$ is **constant in $t_e$**, and so is
+$L_e/T_e = \Lambda_\mu \cdot L_u/T_u$. Both land rents are constant, and so is the return to
+enclosing.
+
+**The consequence: $r'(t_e) = 0$.** Enclosure decisions are then neither strategic complements
+nor substitutes — the dichotomy is degenerate, and with it go multiple equilibria, tipping,
+the property race, and the global-games refinement that selects among them. Enclosure collapses
+to a single comparison of a constant $r$ against $c$: still all-or-nothing, but with no
+strategic interaction between enclosers and no coordination failure to resolve.
+
+That makes the limit a clean diagnostic of what the wage feedback is doing in the benchmark.
+Every coordination result rests on one channel — enclosure displaces labor onto the commons,
+which depresses the commons return, which raises the return to enclosing. Give displaced labor
+somewhere else to go at an unchanged wage and the channel is cut at its first link.
+
+**What survives.**
+
+- **$\theta_H^\mu$ is untouched.** It depends only on $\alpha$ and $\mu$, so the threshold
+  separating labor-extensive from labor-intensive enclosure — and hence §6's direction result,
+  whether enclosure releases labor to industry or draws it back — holds exactly as stated.
+- **The efficiency wedge remains.** At $\mu<1$ commons labor still earns above its marginal
+  product, so entry is still excessive, and an encloser who pays no compensation still fails to
+  internalise displaced rents. Over-enclosure survives; what disappears is the *cascade*, not
+  the externality.
+
+**And it is a knife-edge.** $\beta = 1$ is the only value at which the cancellation is exact.
+For any $\beta < 1$ the manufacturing wage responds to $l_m$, the two factors no longer cancel,
+and $r'(t_e)$ recovers its benchmark sign, that of $(1-\Lambda_\mu)$ — attenuated, monotonically
+in how elastic the outside option is, but qualitatively the benchmark's. The results are
+therefore robust in the sense that matters: they require only that the outside option not be
+*perfectly* elastic.
+
+:::{note} Status
+Analytical, and not yet independently checked. The cancellation above is straightforward in
+the notation of §3, but it is a claim about the model rather than a computed result, and no
+test covers it. Treat it as a lead until it has had a second reading.
+:::
+
 ## 4. Enclosure without any productivity gain
 
 Set $\theta = 1$, so enclosure yields *no* technological improvement whatever, and compare

@@ -2,7 +2,7 @@ r"""Named, equation-tagged boundary loci in (theta, ln l_bar) space.
 
 Every locus below has the form $\ln\bar l = \frac{1}{\alpha}\ln[\text{expr}(\theta)]$,
 so a single theta grid carries every curve if `expr` is masked through
-`enclose.style.safe_log_power` rather than hand-sliced per branch.
+`enclose.numerics.safe_log_power` rather than hand-sliced per branch.
 
 These were previously duplicated by hand, with independent drift, across `enclose.py`'s
 `allpart`/`threeplots` and six cells of `Model_Construction.ipynb` (26, 36, 45, 47, 65, 91).
@@ -20,7 +20,7 @@ keyword arguments, while remaining fully parameterized for other calibrations.
 import numpy as np
 
 from . import model
-from .style import safe_log_power
+from .numerics import safe_log_power
 
 ALP = 2 / 3                  # paper's benchmark alpha
 # C is the paper's c/A, not c: A never appears alone in any locus, because every threshold
@@ -29,7 +29,9 @@ ALP = 2 / 3                  # paper's benchmark alpha
 # what this means if the model is ever extended to output or welfare *levels*.
 C = 1.0
 CV = model.theta_H(ALP)      # theta_H at mu=0 = 1/alpha, eq. (24)
-THETA_TAU = ALP**(-ALP)      # asymptote of the tau=1 global-games locus
+# Asymptote of the tau=1, mu=0 global-games locus. Kept as a constant because
+# figures.trajectories draws exactly that curve; the general boundary is `theta_tau()`.
+THETA_TAU = ALP**(-ALP)
 
 
 def lam_mu(th, alp=ALP, mu=0.0):
@@ -94,21 +96,51 @@ def ln_ld1(th, alp=ALP, c=C, tau=0.0, mu=0.0):
     return safe_log_power(expr, power=1 / alp)
 
 
-def ln_gg(th, alp=ALP, c=C, tau=0.0):
-    r"""Global-games risk-dominance locus, eq. (17), extended by tau (eq. 23):
-    $E[r^e - \tau r^c - c] = 0$ over $t_e \in [0,1]$.
+def theta_tau(alp=ALP, mu=0.0, tau=0.0):
+    r"""Lower edge of the global-games domain, appendix eq. (27a).
 
-    Defined for $\theta < \theta_H$ and $\theta\Lambda^\alpha > \tau$; $+\infty$ elsewhere
-    (no density triggers a raid).
+    $$\theta_\tau(\mu,\tau) = \tau^{1-\alpha}\left(\frac{A_\mu}{\alpha}\right)^{\alpha},
+      \qquad A_\mu = 1-\mu(1-\alpha)$$
+
+    Below this, $\theta\Lambda_\mu^\alpha < \tau$ and the expected return to a raid is
+    negative **at every density** — both rents scale with $\bar l^\alpha$, so density
+    cancels out of the sign and cannot rescue it. The threshold does not move out of view;
+    it ceases to exist. Contrast the enclosure cost $c$, a level charge that density always
+    eventually outruns, which is why every other locus is finite everywhere.
+
+    At $\mu=0,\tau=1$ this is $\alpha^{-\alpha}$. At $\tau=0$ it is $0$ — no restriction.
+    """
+    A_mu = 1 - mu * (1 - alp)
+    return tau**(1 - alp) * (A_mu / alp)**alp
+
+
+def ln_gg(th, alp=ALP, c=C, tau=0.0, mu=0.0):
+    r"""Global-games risk-dominance locus, appendix eq. (15) and its $(\mu,\tau)$
+    extension (27a): $E[r_\mu^e - \tau r_\mu^c - c] = 0$ over $t_e \in [0,1]$.
+
+    $$\bar l_{gg}^d(\mu,\tau) = \left[\frac{c\,(\Lambda_\mu-1)}
+      {(\theta\Lambda_\mu^{\alpha}-\tau)(\Lambda_\mu^{1-\alpha}-1)}\right]^{1/\alpha}$$
+
+    Defined on the interval $\theta_\tau(\mu,\tau) < \theta < \theta_H^\mu$ — squeezed from
+    the left by compensation and from the right by governance — and $+\infty$ outside it.
+    The two edges mean different things: at $\theta_H^\mu$ the multiplicity region itself
+    ends, while below $\theta_\tau$ no density makes a raid pay (see `theta_tau`).
+
+    The governance wedge $A_\mu$ does not appear separately: with
+    $\Lambda_\mu^{1-\alpha} = \alpha\theta/A_\mu$ it enters numerator and denominator alike
+    and cancels, so $\mu$ acts only through $\Lambda_\mu$. That is specific to this locus —
+    in the labor-market conditions of appendix §5.1, $A_\mu$ sets the *level* of what labor
+    takes home and does not cancel.
     """
     th = np.asarray(th, dtype=float)
-    lam = lam0(th, alp)
+    lam = lam_mu(th, alp, mu)
     margin = th * lam**alp - tau
-    cv = 1 / alp
     out = np.full_like(th, np.inf)
-    ok = (margin > 0) & (th < cv)
+    ok = (margin > 0) & (th < model.theta_H(alp, mu))
     with np.errstate(divide="ignore", invalid="ignore"):
-        out[ok] = (1 / alp) * np.log(c * (1 - lam[ok]) / (margin[ok] * (1 - alp * th[ok])))
+        out[ok] = (1 / alp) * np.log(
+            c * (lam[ok] - 1) / (margin[ok] * (lam[ok]**(1 - alp) - 1))
+        )
     return out
 
 
@@ -117,14 +149,97 @@ def ln_gg(th, alp=ALP, c=C, tau=0.0):
 # ---------------------------------------------------------------------------
 
 def ln_ls(th, alp=ALP, c=C):
-    """Second-best full-vs-none locus (low-TFP side), eq. (18)."""
+    r"""Second-best full-vs-none locus (low-TFP side), eq. (18).
+
+    **Invariant to $\mu$, and that is a result rather than an omission.** The comparison is
+    $z_0^\mu(1) - c \ge z_0^\mu(0)$, and both endpoints are free of $\Lambda_\mu$:
+    $z_0^\mu(0) = \bar l^\alpha$ (no land enclosed, so the commons carries everything and
+    the allocation problem is trivial) and $z_0^\mu(1) = \bar l^\alpha\theta$ (all land
+    enclosed, so there is no commons left for governance to act on). Governance only bites
+    at interior $t_e$, and this locus compares the two corners. Hence no `mu` argument.
+    """
     return (1 / alp) * np.log(c / (th - 1))
 
 
 def ln_lc0(th, alp=ALP, c=C):
-    """Second-best no-enclosure locus (high-TFP side), eq. (19)."""
+    """Second-best no-enclosure locus (high-TFP side), eq. (19). Fixed at mu=0 --
+    `ln_ls0_mu` is the governance-extended form and reduces to this at mu=0."""
     lam = lam0(th, alp)
     return (1 / alp) * np.log(alp * c / ((lam * (1 + alp) - alp) * (1 - alp)))
+
+
+# ---------------------------------------------------------------------------
+# Second-best loci, extended by governance (mu)
+#
+# The constrained planner "respects the labor allocation that emerges from decentralized
+# labor markets but can control t_e" (appendix 4.1). Under governance mu that allocation is
+# l_e^mu, so Lambda -> Lambda_mu throughout the objective, which becomes
+#
+#     z_0^mu(t_e) = lbar^alpha * [theta*Lambda_mu^alpha*t_e + (1-t_e)]
+#                              / (1 + (Lambda_mu - 1)*t_e)^alpha
+#
+# reducing to eq. (17) at mu=0 via the identity theta*Lambda^alpha = Lambda/alpha (eq. 12).
+#
+# **tau does not appear and must not be added.** Compensation is a transfer from encloser
+# to commoners; it nets out of total output, so it cannot shift a locus derived from the
+# planner's output margin. It moves the *private* loci (`ln_ld0`, `ln_ld1`) only. The
+# paper's own Figure 6 says the same thing: panel (c) is mu=0, tau=1 and draws exactly the
+# second-best curves of panel (a), tau=0.
+# ---------------------------------------------------------------------------
+
+def ln_ls0_mu(th, alp=ALP, c=C, mu=0.0):
+    r"""Second-best no-enclosure locus, eq. (19) extended by $\mu$.
+
+    From $z_0^{\mu\prime}(0) \ge c$ with $u = 1 + (\theta\Lambda_\mu^\alpha - 1)t_e$ and
+    $v = (1+(\Lambda_\mu-1)t_e)^\alpha$, both evaluated at $t_e = 0$:
+
+    $$z_0^{\mu\prime}(0) = \bar l^\alpha\left[\theta\Lambda_\mu^\alpha - 1
+                                              - \alpha(\Lambda_\mu - 1)\right]$$
+
+    $$\bar l_0^{s,\mu} = \left[\frac{c}{\theta\Lambda_\mu^\alpha - 1
+                                        - \alpha(\Lambda_\mu-1)}\right]^{1/\alpha}$$
+
+    At $\mu=0$, $\theta\Lambda^\alpha = \Lambda/\alpha$ turns the denominator into
+    $(1-\alpha)(\Lambda(1+\alpha)-\alpha)/\alpha$, i.e. exactly `ln_lc0` — asserted in
+    `tests/test_loci.py` rather than left to inspection.
+    """
+    lam = lam_mu(th, alp, mu)
+    expr = c / (th * lam**alp - 1 - alp * (lam - 1))
+    return safe_log_power(expr, power=1 / alp)
+
+
+def ln_ls1_mu(th, alp=ALP, c=C, mu=0.0):
+    r"""Second-best full-enclosure locus, eq. (20) extended by $\mu$.
+
+    From $z_0^{\mu\prime}(1) \ge c$. Using $A_\mu\Lambda_\mu^{1-\alpha} = \alpha\theta$ and
+    $1 - A_\mu = \mu(1-\alpha)$, the derivative at $t_e=1$ collapses to
+
+    $$z_0^{\mu\prime}(1) = \bar l^\alpha (1-\alpha)
+                           \left[\theta - \mu\Lambda_\mu^{-\alpha}\right]$$
+
+    $$\bar l_1^{s,\mu} = \left[\frac{c}{(1-\alpha)
+                                \left(\theta - \mu\Lambda_\mu^{-\alpha}\right)}\right]^{1/\alpha}$$
+
+    **This breaks a coincidence the appendix records.** Appendix eq. (20) notes that the
+    second-best and private full-enclosure thresholds are equal — $\bar l_1^s = \bar l_1^d$
+    of eq. (14). That holds at $\mu = 0$, where this reduces to
+    $[c/((1-\alpha)\theta)]^{1/\alpha}$. It does **not** survive $\mu > 0$: `ln_ld1` at
+    $\tau=0$ is invariant to $\mu$ (its $\Lambda_\mu^\alpha$ cancels top and bottom), while
+    this locus is not. So the two curves separate as governance improves.
+
+    Both scopes are load-bearing. The coincidence is a $\tau=0$ statement — with $\tau>0$ the
+    private locus moves for an unrelated reason, and lands *above* this one. And it is a
+    $\theta > \theta_H^\mu$ statement: below that, $z_0$ is convex, so the optimum is a corner
+    rather than a tangency and eq. (18)'s full-versus-none comparison governs instead — this
+    locus does not apply there and `enclose.figures.wedge_panel` masks it out. That separation is
+    derived here and is **not** in the appendix — treat it as a claim to check, not as
+    settled, before it goes anywhere near the manuscript. Written up, with the intuition and
+    the policy reading, in `enclosure_paper/REVISION_IDEAS.md` section 1 (private repo,
+    deliberately: this has not been reviewed by the co-author).
+    """
+    lam = lam_mu(th, alp, mu)
+    expr = c / ((1 - alp) * (th - mu * lam**(-alp)))
+    return safe_log_power(expr, power=1 / alp)
 
 
 # ---------------------------------------------------------------------------
@@ -153,12 +268,9 @@ def ln_ld1_mu(th, alp=ALP, c=C, mu=0.0):
 
 
 def ln_gg_mu(th, alp=ALP, c=C, mu=0.0):
-    """Global-games locus under partial commons governance mu. Reduces to `ln_gg(th, alp,
-    c)` at mu=0 (verified numerically)."""
-    th = np.asarray(th, dtype=float)
-    lam = lam_mu(th, alp, mu)
-    expr = (c / th) * (1 - lam) / (lam**alp - lam)
-    return safe_log_power(expr, power=1 / alp)
+    """Global-games locus under governance mu alone — a named entry point for the tau=0
+    edge, delegating to the joint form rather than carrying its own algebra."""
+    return ln_gg(th, alp, c, tau=0.0, mu=mu)
 
 
 # ---------------------------------------------------------------------------

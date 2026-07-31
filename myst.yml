@@ -14,6 +14,19 @@ project:
       affiliations:
         - hunter
   github: https://github.com/open-enclose/open-enclose.github.io
+  # In-browser computation via thebe-lite, which bundles a JupyterLite server and Pyodide
+  # into the static page. No server, no Binder cold start, works on plain GitHub Pages --
+  # the reason this was chosen over Thebe/Binder (REORGANIZATION_PROPOSAL.md section 4).
+  # Only content/05-explore.md uses it; every other page still shows pre-generated PNGs
+  # from Figures/, and the CI build still has no --execute step.
+  jupyter:
+    lite: true
+  # Copied verbatim to the site root, so the wheel is served at
+  # /pyodide/enclose-0.1.0-py3-none-any.whl for the explore page's micropip install.
+  # Named `pyodide/` rather than the obvious `wheels/`, which the standard Python
+  # .gitignore excludes as build output -- this wheel is a shipped asset, not build output.
+  static_files:
+    - pyodide
   # Explicit table of contents. Without one, mystmd auto-discovers every markdown file in
   # the project -- which would also publish TODO.md and anything left in archive/.
   toc:
@@ -22,6 +35,7 @@ project:
     - file: content/02-figures.md
     - file: content/03-manufacturing.md
     - file: content/04-derivations.md
+    - file: content/05-explore.md
 site:
   template: book-theme
   title: A Model of Enclosures

@@ -1,7 +1,9 @@
 r"""Shared plotting conventions for the enclosure figures.
 
-Ported from `Model_Construction.ipynb` cell 91 (`safe_log_power`, `style_axes`,
-`common_labels`, `fill_between_sorted`) and cell 47 (the hatching idiom). Every figure in
+Ported from `Model_Construction.ipynb` cell 91 (`style_axes`, `common_labels`,
+`fill_between_sorted`) and cell 47 (the hatching idiom). Cell 91's fourth helper,
+`safe_log_power`, lives in `enclose.numerics` instead — it is pure numpy, and keeping it here
+made the whole locus layer depend on matplotlib. Every figure in
 `enclose.figures` is built from these instead of re-deriving axis cosmetics by hand, which
 is how the six figure-producing cells drifted from each other in the first place (see
 `REORGANIZATION_PROPOSAL.md`).
@@ -29,24 +31,6 @@ COLOR_MONOPOLY = "green"
 LINESTYLE_SELECTION = "dashed"
 LINESTYLE_THRESHOLD = ":"
 REGION_ALPHA = 0.12
-
-
-def safe_log_power(expr, power=1.0, shift=0.0):
-    """Return log((expr)**power) + shift, masking expr<=0 as NaN.
-
-    Every locus has the form l_bar = [expr]^(1/alpha), where expr changes sign as theta
-    crosses 1 or 1/alpha. This lets one theta grid carry every curve instead of hand-slicing
-    the domain into pieces per branch.
-
-    `shift` is also how the small hand-tuned offsets in the monopoly and comparison figures
-    (previously buried literals like `- .03`) are applied — see the named constants in
-    `enclose.figures`.
-    """
-    expr = np.asarray(expr, dtype=float)
-    out = np.full_like(expr, np.nan, dtype=float)
-    mask = np.isfinite(expr) & (expr > 0)
-    out[mask] = np.log(expr[mask]**power) + shift
-    return out
 
 
 def style_axes(ax):

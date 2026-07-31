@@ -37,6 +37,32 @@ This online appendix provides complete mathematical derivations for all numbered
 - $A_\mu = 1-\mu(1-\alpha)$: share of the commons average product that labor retains, eq. (37)
 - $\tau \in [0,1]$: compensation/power parameter
 
+:::{note} On $\Lambda$, and its correspondence with the paper's notation
+This appendix carries the composite
+
+$$\Lambda_\mu = \left(\frac{\alpha\theta}{A_\mu}\right)^{\frac{1}{1-\alpha}},
+\qquad \Lambda_0 = (\alpha\theta)^{\frac{1}{1-\alpha}},
+\qquad \Lambda_1 = \Lambda_o = \theta^{\frac{1}{1-\alpha}}$$
+
+throughout, because every equilibrium object is a function of it and the closed forms are
+unreadable without it. **The main paper deliberately avoids $\Lambda$**, writing the same
+expressions in terms of $\alpha$ and $\theta$ directly. The two are related by
+
+$$\Lambda_\mu^{1-\alpha} = \frac{\alpha\theta}{A_\mu},
+\qquad\text{so at } \mu=0: \quad \Lambda^{1-\alpha} = \alpha\theta$$
+
+which is the substitution that turns any expression here into the paper's form. Two
+consequences are worth keeping in view when moving between the documents:
+
+- A factor written $(1-\alpha\theta)$ in the paper appears here as
+  $-(\Lambda^{1-\alpha}-1)$. Both vanish at $\theta_H = 1/\alpha$; the paper's form reads
+  more directly as *distance from the threshold*, which is why it is preferred there.
+- The $\Lambda$ form is what generalizes. Writing $\alpha\theta$ silently fixes $\mu=0$,
+  because in general $\Lambda_\mu^{1-\alpha} = \alpha\theta/A_\mu$. Extensions to $\mu$
+  should be done in the $\Lambda_\mu$ form and simplified afterwards, not the reverse —
+  the governance wedge is easy to lose otherwise.
+:::
+
 ---
 
 ## Section 3: Benchmark Model
@@ -971,10 +997,9 @@ $$\bar{l}_{gg}^d(\mu,\tau) = \left[\frac{(c/A)\left(\Lambda_\mu-1\right)}
 **Properties:**
 
 - At $\mu=\tau=0$ this is equation (15), since $\Lambda_0 = \Lambda$.
-- It is defined where $\theta < \theta_H^\mu$ *and* $\theta\Lambda_\mu^{\alpha} > \tau$. The
-  second condition is substantive: with sufficient compensation the expected return to a
-  raid is negative at every density, and no threshold exists. At $\mu=0$ this bites at
-  $\theta_\tau = \alpha^{-\alpha}$ when $\tau=1$.
+- It is defined where $\theta < \theta_H^\mu$ *and* $\theta\Lambda_\mu^{\alpha} > \tau$ —
+  an interval, squeezed from the right by governance and from the left by compensation. The
+  second edge is derived below and is substantive rather than technical.
 - The governance wedge $A_\mu = 1-\mu(1-\alpha)$ of equations (22)–(23) does **not** appear
   as a separate factor here. Using $\Lambda_\mu^{1-\alpha} = \alpha\theta/A_\mu$, it enters
   numerator and denominator alike and cancels, leaving $\mu$ to act only through
@@ -1004,6 +1029,57 @@ which dominates is a quantitative question.
 *Verification:* (27a) was checked against symbolic integration, against numerical quadrature
 of the payoff, and by reduction to the two one-sided forms already implemented in the code —
 equation (15) extended in $\tau$ at $\mu=0$, and the $\mu$-extended form at $\tau=0$.
+
+---
+
+#### Equation (27b): Where the Selection Threshold Ceases to Exist
+
+The condition $\theta\Lambda_\mu^{\alpha} > \tau$ in (27a) has a closed-form boundary.
+Setting the two equal and using $\Lambda_\mu^{1-\alpha} = \alpha\theta/A_\mu$:
+
+$$\theta\left(\frac{\alpha\theta}{A_\mu}\right)^{\frac{\alpha}{1-\alpha}} = \tau
+\qquad\Longrightarrow\qquad
+\theta_\tau(\mu,\tau) = \tau^{1-\alpha}\left(\frac{A_\mu}{\alpha}\right)^{\alpha}
+\qquad (27b)$$
+
+At $\tau=0$ this is $0$, imposing nothing. At $\mu=0,\tau=1$ it is $\alpha^{-\alpha}$
+($\approx 1.310$ at $\alpha=2/3$), the asymptote of the $\tau=1$ locus.
+
+**Why this is a different kind of boundary.** Both rents in (27) carry the same factor
+$\bar l^{\alpha}$, so it factors out of the comparison entirely:
+
+$$r_\mu^e - \tau r_\mu^c = (1-\alpha)A\bar{l}^{\alpha}
+\underbrace{\left(\theta\Lambda_\mu^{\alpha}-\tau\right)}_{\text{no } \bar l}
+\left(1+(\Lambda_\mu-1)t_e\right)^{-\alpha}$$
+
+Population density scales *both* the encloser's gross return and the compensation owed, so
+it cannot change the sign of their difference. Below $\theta_\tau$ the expected net return
+is negative at **every** density: the threshold does not move upward out of reach, it ceases
+to exist.
+
+This distinguishes the two obstacles to enclosure in the model:
+
+| | how it enters | can density overcome it? |
+|:---|:---|:---|
+| Enclosure cost $c$ | a **level** charge per unit land | **Yes.** Rents scale with $\bar l^{\alpha}$ while $c$ does not, so some density always suffices. This is why every locus is downward-sloping and finite. |
+| Compensation $\tau$ | a **proportional** claim on displaced rents | **No.** It scales with the thing it taxes, so the comparison is density-free. Below $\theta_\tau$ no density suffices. |
+
+The distinction matters for the Boserupian reading of the model. Rising population density
+is the mechanism that drives an economy through every other threshold in the paper —
+$\bar l_0^1$, $\bar l_0^d$, $\bar l_{gg}^d$. Compensation is the one institution it cannot
+push through. Cost-based protections for customary users — titling fees, registration
+requirements, administrative friction — are eroded by population growth, because they are
+levels. A compensation *requirement* is not, because it is a share.
+
+**Closure at the corner.** Since $\theta_H^\mu = A_\mu/\alpha$ and
+$\theta_\tau = \tau^{1-\alpha}(A_\mu/\alpha)^{\alpha}$, the interval
+$(\theta_\tau, \theta_H^\mu)$ is non-empty whenever $\tau < 1$ or $\mu < 1$, and empty
+exactly at $\mu=\tau=1$, where both equal $1$. So the coordination problem vanishes at
+precisely the corner where the wedge closes: complete governance and complete compensation
+not only align the decentralized loci with the planner's (§5.3), they eliminate the
+multiplicity that made equilibrium selection necessary in the first place. Neither parameter
+achieves this alone — at $\mu<1$ a multiplicity region survives even at $\tau=1$, since
+$(A_\mu/\alpha)^{\alpha} < A_\mu/\alpha$ whenever $A_\mu/\alpha > 1$.
 
 ---
 

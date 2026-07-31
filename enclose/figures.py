@@ -454,6 +454,131 @@ def combined_4x4(mu=1.0, tau=1.0):
     return fig, ax
 
 
+# Fixed for `wedge_panel` so the axes do not rescale as mu and tau move. Under a slider a
+# self-scaling panel is unreadable -- the curves stay put and the frame jumps around, which
+# reads as the loci moving when they have not. Chosen to contain panels (a)-(d) of
+# `combined_4x4` at every (mu, tau), so the single panel is directly comparable to the 2x2.
+_WEDGE_XLIM = (0.8, 2.15)
+_WEDGE_YLIM = (-1.6, 4.0)
+
+
+def wedge_panel(mu=0.0, tau=0.0, ax=None, second_best=True, figsize=(7.5, 6)):
+    r"""One panel of `combined_4x4`, for *any* $(\mu, \tau)$ rather than the four corners.
+
+    `combined_4x4` hard-codes $(\mu,\tau) \in \{0,1\}^2$ across four axes. This draws the
+    same content on a single axis with both parameters continuous, which is what makes the
+    wedge legible under a slider: the black planner band is fixed, and the red decentralized
+    band moves toward it as governance ($\mu$) and compensation ($\tau$) rise. At
+    $\mu=\tau=1$ the two coincide exactly -- the paper's Key Result (§5.3, "the wedge
+    closes"), here reached continuously instead of in one jump between panels.
+
+    **The global-games locus is drawn only where it exists.** `ln_gg` is $\tau$-extended but
+    $\mu=0$ only; `ln_gg_mu` is $\mu$-extended but $\tau=0$ only. A combined $(\mu,\tau)$
+    risk-dominance threshold is derived nowhere in the appendix or this codebase, so when
+    both are non-zero this panel omits the dashed selection curve and says so on the axis
+    rather than interpolating something underived. Do not "fix" that by drawing either
+    one-sided locus in the interior; they are not the same object.
+
+    **The blue second-best loci move with $\mu$ and not with $\tau$.** The constrained
+    planner respects the decentralized labor allocation, which governance shifts; but
+    compensation is a transfer and cancels out of any output objective. Two of the three
+    move: eq. (19) and eq. (20) generalize, while eq. (18) is $\mu$-invariant because it
+    compares $t_e=0$ with $t_e=1$ and governance bites only in between. `second_best=False`
+    drops them.
+    """
+    # Matches the other single-panel figures, which is what the site's default body column
+    # fits. `figsize` is exposed for anyone rendering this somewhere wider; ignored when
+    # `ax` is supplied.
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.figure
+
+    th_H = model.theta_H(ALP, mu)          # theta_H^mu, eq. (24)
+
+    the_1 = np.arange(1.1, 2.1, 0.005)     # planner band domain, as in combined_4x4
+    the_d = np.arange(0.8, 2.1, 0.005)     # decentralized loci extend below theta=1
+
+    # ---- planner band (black): independent of mu and tau, the fixed reference ----
+    l01, l11 = loci.ln_l01(the_1), loci.ln_l11(the_1)
+    ax.plot(the_1, l01, color=COLOR_PLANNER_BLACK)
+    ax.plot(the_1, l11, color=COLOR_PLANNER_BLACK)
+    fill_between_sorted(ax, the_1, l01, l11, np.ones_like(the_1, bool),
+                        alpha=REGION_ALPHA, color="C0")
+
+    # ---- decentralized band (red): the part that moves ----
+    l0d = loci.ln_ld0(the_d, tau=tau, mu=mu)
+    l1d = loci.ln_ld1(the_d, tau=tau, mu=mu)
+    ax.plot(the_d, l0d, color=COLOR_DECENTRALIZED)
+    ax.plot(the_d, l1d, color=COLOR_DECENTRALIZED)
+    # The two loci swap order at theta_H^mu, so the fill is split there -- otherwise
+    # fill_between draws the bowtie across the crossing.
+    fill_between_sorted(ax, the_d, l0d, l1d, the_d > th_H, alpha=REGION_ALPHA, color="C3")
+    fill_between_sorted(ax, the_d, l1d, l0d, the_d < th_H, alpha=REGION_ALPHA, color="C3")
+
+    # ---- global-games selection locus, drawn on its actual domain ----
+    # Appendix (27a) gives the joint (mu, tau) form, so this is no longer restricted to the
+    # two edges. It lives on theta_tau < theta < theta_H^mu, squeezed from the left by
+    # compensation and from the right by governance, and the two edges mean different
+    # things: at theta_H^mu the multiplicity region itself ends, while below theta_tau no
+    # density makes a raid pay -- both rents scale with lbar^alpha, so density cancels out
+    # of the sign. `ln_gg` returns +inf outside the interval, which matplotlib skips.
+    th_tau = loci.theta_tau(ALP, mu, tau)
+    if th_tau < th_H:
+        the_gg = np.arange(max(0.8, th_tau), th_H, 0.002)
+        ax.plot(the_gg, loci.ln_gg(the_gg, tau=tau, mu=mu), color=COLOR_DECENTRALIZED,
+                linestyle=LINESTYLE_SELECTION, linewidth=2)
+        # Mark the left edge only when compensation is what creates it, i.e. when it sits
+        # inside the plotted range rather than at theta_tau = 0.
+        if tau > 0 and th_tau > _WEDGE_XLIM[0]:
+            ax.axvline(th_tau, color=COLOR_DECENTRALIZED, linestyle=":", linewidth=1,
+                       alpha=0.7)
+            gg_note = (rf"$\theta_\tau={th_tau:.2f}$: below this no" "\n"
+                       "density makes a raid pay")
+        else:
+            gg_note = None
+    else:
+        # theta_tau has overtaken theta_H^mu -- the interval is empty and the coordination
+        # problem is gone entirely. Happens only at mu = tau = 1, where both are 1.
+        gg_note = ("no multiplicity region:\n"
+                   r"$\theta_\tau \geq \theta_H^\mu$")
+
+    # ---- second-best loci (blue, dashed): move with mu, but not with tau ----
+    # The constrained planner respects the *decentralized* labor allocation, which is
+    # governed by mu -- so these are not static context, they shift as governance improves.
+    # tau is absent by derivation, not by oversight: it is a transfer, so it nets out of the
+    # planner's output margin. See the `ln_ls0_mu` / `ln_ls1_mu` docstrings.
+    #
+    # The regime split is at theta_H^mu, not the fixed 1/alpha -- the boundary between the
+    # convex and concave branches of z_0 moves with mu along with the loci themselves.
+    if second_best:
+        # The eq.(19)/(20) arguments go negative on the wrong side of theta_H^mu; masked
+        # immediately after, so the NaNs there are expected rather than a bug.
+        with np.errstate(invalid="ignore"):
+            ls = np.where(the_1 < th_H, loci.ln_ls(the_1), np.nan)
+            ls0 = np.where(the_1 > th_H, loci.ln_ls0_mu(the_1, mu=mu), np.nan)
+            ls1 = np.where(the_1 > th_H, loci.ln_ls1_mu(the_1, mu=mu), np.nan)
+        for curve in (ls, ls0, ls1):
+            ax.plot(the_1, curve, linestyle=LINESTYLE_SELECTION,
+                    color=COLOR_PLANNER_BLUE, linewidth=2)
+
+    ax.axvline(1, ymax=0.95, linestyle=LINESTYLE_THRESHOLD, color="black")
+    ax.axvline(th_H, ymax=0.95, linestyle=LINESTYLE_THRESHOLD, color="black")
+
+    ax.set_xlim(*_WEDGE_XLIM)
+    ax.set_ylim(*_WEDGE_YLIM)
+    ax.set_title(rf"$\mu={mu:.2f}$,  $\tau={tau:.2f}$"
+                 rf"    ($\theta_H^\mu={th_H:.2f}$)", fontsize=15)
+    common_labels(ax, fontsize=12)
+    style_axes(ax)
+
+    if gg_note is not None:
+        ax.annotate(gg_note, xy=(0.03, 0.03), xycoords="axes fraction", fontsize=9,
+                    style="italic", color="grey", va="bottom")
+
+    return fig, ax
+
+
 # ---------------------------------------------------------------------------
 # trajectories.png -- ported from generate_trajectories_figure.py, which was already
 # well-designed (named, eq-tagged loci, sanity_checks()); adapted only to call

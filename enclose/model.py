@@ -95,6 +95,46 @@ def req(te, th=1.0, alp=0.5, lbar=1.0, mu=0.0):
     return (1 - alp) * th * lam**alp * (1 + (lam - 1) * te)**(-alp) * (lbar)**(alp)
 
 
+def rcom(te, th=1.0, alp=0.5, lbar=1.0, mu=0.0):
+    r"""Rental on *unenclosed* (commons) land — the marginal product of commons land.
+
+    $$r^c(t_e) = (1-\alpha)\left(\frac{L_c}{T_c}\right)^\alpha
+               = \frac{(1-\alpha)\,\bar l^\alpha}{(1+(\Lambda_\mu-1)t_e)^{\alpha}}$$
+
+    using $T_c = 1-t_e$ and $1-l_e = (1-t_e)/(1+(\Lambda_\mu-1)t_e)$, so the $(1-t_e)$
+    cancels. No $\theta$: commons land is unenclosed, so it runs the baseline technology.
+    This is `req` with the $\theta\Lambda_\mu^\alpha$ factor removed — the two differ by
+    exactly the productivity advantage of enclosure.
+
+    Not to be confused with `decomp`'s `FTc`, which carries a $\theta$ and no $\bar l^\alpha`;
+    `decomp` is marked unfinished and nothing depends on it.
+    """
+    lam = Lambda(th, alp, mu)
+    return (1 - alp) * (1 + (lam - 1) * te)**(-alp) * lbar**alp
+
+
+def req_net(te, th=1.0, alp=0.5, lbar=1.0, mu=0.0, tau=0.0):
+    r"""Rental on enclosed land net of compensation — the private enclosure margin, eq. (27).
+
+    $$r^e_\mu(t_e) - \tau\,r^c_\mu(t_e)
+      = \frac{(1-\alpha)\,\bar l^\alpha\left(\theta\Lambda_\mu^\alpha - \tau\right)}
+             {(1+(\Lambda_\mu-1)t_e)^{\alpha}}$$
+
+    An encloser pays the village $\tau$ times the commons rental it displaces, so $\tau=0$ is
+    free enclosure and $\tau=1$ is full compensation. Setting this equal to $c$ at $t_e=0$ and
+    $t_e=1$ reproduces `loci.ln_ld0` and `loci.ln_ld1` exactly — asserted in
+    `tests/test_model.py`, which is the cross-check that this and the locus layer describe the
+    same object.
+
+    The whole $t_e$-dependence sits in the common factor, so $\tau$ shifts the *level* of the
+    margin without changing its shape: the sign of $(\theta\Lambda_\mu^\alpha - \tau)$ decides
+    whether enclosure is ever privately worthwhile, and $\Lambda_\mu \gtrless 1$ decides
+    whether the margin rises or falls in $t_e$.
+    """
+    lam = Lambda(th, alp, mu)
+    return (1 - alp) * (th * lam**alp - tau) * (1 + (lam - 1) * te)**(-alp) * lbar**alp
+
+
 def weq(te, th=1.0, alp=0.5, lbar=1.0, mu=0.0):
     r"""Decentralized equilibrium wage.
 
@@ -178,45 +218,80 @@ def teopt(th, alp, c, lbar):
     return teopt_val
 
 
-def tepvt(th, alp, c, lbar, mu):
-    """Private enclosure rate.
+def tepvt(th, alp, c, lbar, mu, tau=0.0):
+    r"""Private enclosure rate, with compensation $\tau$.
 
-    req(te) = rental rate. r(0)<c: no enclosure. r(1)>c: full enclosure.
-    r(0)>c and r(1)<c: partial enclosure, solved from the FOC.
+    The margin is `req_net` = $r^e_\mu - \tau r^c_\mu$, eq. (27). $r^e-\tau r^c<c$ at both
+    ends: no enclosure. $\ge c$ at both: full enclosure. Otherwise the interior root, which
+    solves $r^e(t_e)-\tau r^c(t_e)=c$:
+
+    $$t_e^d = \frac{1}{\Lambda_\mu-1}
+              \left(\bar l\left[\frac{(1-\alpha)(\theta\Lambda_\mu^\alpha-\tau)}{c}\right]^{1/\alpha} - 1\right)$$
+
+    At $\tau=0$ this is algebraically identical to the form this function carried before
+    compensation was added — $(\Lambda_\mu^\alpha)^{1/\alpha}=\Lambda_\mu$ pulls the $\Lambda$
+    out front — so the $\tau=0$ behaviour is unchanged, which `tests/test_model.py` pins.
+
+    Which branch applies still turns on $\Lambda_\mu \gtrless 1$, i.e. on $\theta$ against
+    $\theta_H^\mu$: $\tau$ scales the margin but does not change whether it rises or falls
+    in $t_e$.
     """
     thresh = theta_H(alp, mu)
     lam = Lambda(th, alp, mu)
-    r0 = req(0, th, alp, lbar, mu)
-    r1 = req(1, th, alp, lbar, mu)
-    if th < thresh:  # r slopes up
+
+    # If compensation exceeds the gross return to enclosed land, the margin is negative at
+    # every te and no density makes enclosure worthwhile. Returning early also keeps the
+    # interior formula from taking a fractional power of a negative number.
+    margin = th * lam**alp - tau
+    if margin <= 0:
+        return 0.0
+
+    r0 = req_net(0, th, alp, lbar, mu, tau)
+    r1 = req_net(1, th, alp, lbar, mu, tau)
+
+    def interior():
+        """Evaluated lazily, never eagerly: at theta = theta_H^mu exactly, Lambda_mu is 1 and
+        this divides by zero. There the margin is flat in t_e, so one of the corner branches
+        always applies and this is never reached."""
+        return (lbar * ((1 - alp) * margin / c)**(1 / alp) - 1) / (lam - 1)
+
+    if th < thresh:  # margin slopes up in te
         if r0 >= c:
             tep = 1.0
         elif r1 < c:
             tep = 0.0
         else:
-            tep = lbar * (lam / (lam - 1)) * (th * (1 - alp) / c)**(1 / alp) - (1 / (lam - 1))
-    else:  # r slopes down
+            tep = interior()
+    else:  # margin slopes down in te
         if r1 >= c:
             tep = 1.0
         elif r0 < c:
             tep = 0.0
         else:
-            tep = lbar * (lam / (lam - 1)) * (th * (1 - alp) / c)**(1 / alp) - (1 / (lam - 1))
+            tep = interior()
 
     return tep
 
 
-def tepvt_g(th, alp, c, lbar, mu):
-    """Private enclosure rate under the global-games refinement.
+def tepvt_g(th, alp, c, lbar, mu, tau=0.0):
+    r"""Private enclosure rate under the global-games refinement.
 
     Like `tepvt` but adjusted for the global game: if theta < theta_hi, the refinement
     says enclose fully if tep (from `tepvt`) <= 0.5, else no enclosure.
 
     `mu` is threaded through to `tepvt` (a prior version hardcoded `mu=0` here regardless
     of the caller's `mu`, silently discarding it whenever `mu != 0`).
+
+    **$\tau$ enters only through `tepvt`.** The one-half rule is a reduced form for risk
+    dominance in a symmetric binary coordination game — pick the action with the larger basin
+    — and it responds to compensation only because compensation moves the indifference point
+    `tep`. Whether that remains the correct selection once the payoffs are compensated is not
+    established here; `loci.ln_gg` carries its own $\tau$ extension, derived by integrating
+    the compensated payoff, and that is the object to check this against if the selection
+    below $\theta_H^\mu$ starts carrying weight.
     """
     thresh = theta_H(alp, mu)
-    tep = tepvt(th, alp, c, lbar, mu)
+    tep = tepvt(th, alp, c, lbar, mu, tau)
 
     tepg = tep
     if (tep == 1) or (tep == 0):

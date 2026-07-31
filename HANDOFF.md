@@ -30,79 +30,104 @@ Outside this repo: the appendix's second copy in `enclosure_book` is now a stub,
 retired behind a redirect, and roughly 260 files of research material moved from
 `enclosure_book` into `enclosure_paper`.
 
-## Next: interactivity (Phase 4)
+## Phase 4: interactivity — built 2026-07-29, **not yet verified in a browser**
 
-**Nothing has been built.** No Pyodide, JupyterLite, Thebe or Binder references exist in the
-repo; no files, config or drafts. The state below was recovered from the prior conversation
-and then **checked against the repository** — findings marked *verified* were re-run here,
-the rest is reported.
+An explore page now exists and the whole pipeline is wired. Read the verification gap below
+before trusting it. Nothing in this section is committed.
 
-### The decision was already made, and not by that thread
+### What was built
 
-JupyterLite/Pyodide, recorded in `enclosure_book`'s `REORGANIZATION_PROPOSAL.md` §4 on
-2026-07-27. Rationale as recorded: no server, no Binder cold-start, works on plain GitHub
-Pages, and the model is closed-form numpy so it evaluates instantly. numpy, matplotlib and
-sympy are all in the Pyodide distribution. The prior thread read this and did not re-litigate
-it, so **it has one author and no second opinion** — worth knowing before building on it.
+- `enclose/numerics.py` — `safe_log_power` moved here out of `style.py`. This was the recorded
+  blocker: `loci.py` imported it from `style.py`, which imports `matplotlib.patches`, so
+  evaluating any locus pulled in the whole plotting stack.
+- `tests/test_imports.py` — subprocess-based guard that `enclose`, `enclose.numerics`,
+  `enclose.model` and `enclose.loci` leave matplotlib/scipy/sympy out of `sys.modules`, plus
+  two converse tests so it cannot pass vacuously. **190 tests pass** (184 + 6).
+- `myst.yml` — `project.jupyter.lite: true` and `project.static_files: [pyodide]`.
+- `pyodide/enclose-0.1.0-py3-none-any.whl` — committed wheel, served at
+  `/pyodide/enclose-0.1.0-py3-none-any.whl`.
+- `content/05-explore.md` — added to the toc. Setup cell, one live figure, two `interact`
+  slider sections, an open-ended cell.
+- `deploy.yml` — MyST CLI pinned to `mystmd@^1.10`.
 
-The one recorded rejected alternative: reimplementing the loci in JavaScript for faster load,
-rejected because it would create a second implementation of the same mathematics.
+### Corrections to what this handoff previously said
 
-### A real blocker, verified
+- **"JupyterLite would be a separate build artifact, not a change to this flow" was wrong.**
+  It is three lines in `myst.yml`. mystmd ships `thebe-lite`, which bundles a JupyterLite
+  server and Pyodide into the static page. The build emits `thebe-core.min.js` /
+  `thebe-lite.min.js` and nothing else changes — still no `--execute` in CI.
+- **The scipy question resolves in favour of the browser.** scipy is in the Pyodide
+  distribution, so `enclose.manufacturing` and its `brentq` solve can run live. Manufacturing
+  figures do not need pre-rendering.
+- **The "reported, not verified" claim about `interact`-readiness is now verified.** Every
+  figure function takes keyword arguments with defaults; the single-panel ones take `ax=None`.
 
-`import enclose.loci` **pulls in matplotlib**. Confirmed by import test: after
-`import enclose.model`, `matplotlib` is absent from `sys.modules`; after `import enclose.loci`
-it is present. The path is `loci.py:23` → `from .style import safe_log_power` → `style.py`
-imports `matplotlib.patches`.
+### New findings
 
-Fix: move `safe_log_power` out of `style.py`. It is a pure numpy helper and does not belong in
-a styling module. **Not implemented.** Load-bearing under Pyodide, not cosmetic.
+- **`project.static_files` requires mystmd ≥ 1.10.** 1.9.1 logs
+  `'config.project' extra key ignored: static_files` and builds a site where the wheel is
+  simply missing — a silent failure that surfaces only as a runtime 404. The local `ecopy` env
+  was on 1.9.1; CI was unpinned (`npm install -g mystmd`) and so happened to work. Now pinned
+  to `^1.10`, with the reason recorded in `deploy.yml`.
+- **Pyodide is fetched from `cdn.jsdelivr.net/pyodide/v0.27.0/full/`, not bundled.** The
+  explore page therefore depends on a third-party CDN at runtime. Documented on the page.
+- **The JupyterLite kernel runs in a Web Worker, so `js.window` does not exist.** The first
+  draft used `js.window.location.origin` and failed with `AttributeError: window`. Confirmed
+  against a real worker in this browser: `window` is `undefined`, `location.origin` is
+  correct. The page now uses `js.location.origin`.
 
-**scipy is also now a real dependency** — verified: `import enclose.manufacturing` pulls scipy
-(it uses `brentq`). This turns an open question in the proposal into a live one: does scipy go
-into the browser, or do manufacturing figures ship pre-rendered?
+### The verification gap — read this
 
-### Build-pipeline facts, verified
+**The explore page has never been run end to end.** Confirmed:
 
-- **CI has no execution step.** `.github/workflows/deploy.yml` runs `myst build --html` with
-  no `--execute`. Every page references pre-generated PNGs from `Figures/`, regenerated by
-  `scripts/make_figures.py` before the build. **JupyterLite would be a separate build
-  artifact, not a change to this flow.**
-- `myst.yml` uses an explicit `project.toc` (five pages). An explore page must be added there
-  or it will not appear — deliberately not auto-discovered.
+- The site builds clean on mystmd 1.10.1 with no warnings.
+- The wheel is served at the exact URL the page requests (HTTP 200, 30,974 bytes).
+- `location.origin` resolves correctly inside a Web Worker in this browser.
+- On one earlier run the kernel *did* boot, execute every cell, and fail only on the
+  `js.window` line — so thebe-lite, the Pyodide boot and cell execution all work.
 
-### Reported, not verified
+**Not** confirmed, because the browser automation stopped dispatching clicks to thebe's start
+button after that first run:
 
-- The figure functions are already `interact`-ready: keyword-with-defaults arguments and
-  `ax=None` for composition, a pattern preserved from the old `enclose.py` on purpose.
-- The package never imports ipywidgets, and that hygiene was deliberate. The *old*
-  `enclosure_book/notebooks/enclose.py` does import `ipywidgets` and `IPython.display` at
-  module level. Whether any notebook relies on `from enclose import *` to pick up
-  `interact`/`fixed` is **unchecked**, and was the stated reason for deferring its removal.
-- No load-time or bundle-size measurement was taken; no ipywidgets↔JupyterLite version pinning
-  attempted. **How mystmd integrates JupyterLite was never looked at** — entirely unexplored,
-  and probably the first thing to find out.
+- `micropip` actually installing the wheel from that URL.
+- `enclose` importing under Pyodide's Python 3.12 / numpy 2.x.
+- **`ipywidgets` sliders working under thebe-lite** — the version pairing this handoff
+  flagged as historically finicky, and still the highest-risk item.
 
-### Where the plan lives — and a trap
+Someone should open the page in a real browser and click "start compute environment" before
+this ships:
 
-The Phase 4 plan is in `TODO.md` at the repo root. **`TODO.md` is gitignored** (`.gitignore`,
-under "Project-specific"), so it is not in the repository and would not survive a fresh clone
-elsewhere. It travels between Jonathan's machines only because they share one Drive-mirrored
-folder. The substance of it is reproduced above; if you want it durable, that ignore rule has
-to change.
+```bash
+python -m http.server 8765 --directory _build/html
+```
 
-### Two constraints from `CLAUDE.md`
+### Still true
 
-- Any interactive page should **import from `enclose`**, not reimplement the model. Parallel
+- Any interactive page must **import from `enclose`**, not reimplement the model. Parallel
   implementations are what the reorganisation existed to remove, and one still survives in
   Matt's repo.
 - **Do not regenerate `Figures/` into the repo.** Which figure set is canonical is unsettled.
-  Rendering live in a browser session is fine; overwriting the committed set is not.
+- `myst.yml` uses an explicit `project.toc`; a page not listed there does not appear.
+- `TODO.md` is gitignored and **badly stale** — it lists Phase 3 as pending although all four
+  content pages ship and `Model_Construction.ipynb` is already in `archive/`, and it lists a
+  `myst.yml` nav warning that can no longer occur (there is no `nav:` key). Rewrite or drop it.
 
-### Suggested order, proposed but not approved
+### Local environment notes (this machine, 2026-07-29)
 
-Move `safe_log_power` first (small, unblocks everything), then Phase 5 archive work, then
-Phase 4 proper. Phase 5 also removes the `enclose` name collision, described as a latent trap.
+`CLAUDE.md` documents `mamba run -n ecopy python -m pytest tests/ -q`, but **mamba is not
+installed here** — miniforge at `%LOCALAPPDATA%\miniforge3` ships only `conda.exe`, and it is
+not on PATH. `ecopy` was also missing `pytest`, `python-build` and `nodejs`; all three were
+installed from conda-forge, and `mystmd` was upgraded 1.9.1 → 1.10.1. Working invocation:
+
+```bash
+"$LOCALAPPDATA/miniforge3/envs/ecopy/python.exe" -m pytest tests/ -q
+```
+
+### Phase 5 is still untouched
+
+`Figures/new_comp_fig.png`, the root `social_opt_cond.png`, `anaconda_projects/`, and retiring
+`enclosure_book/notebooks/enclose.py` with its `enclose` name collision — all still present.
+Phase 5 also removes that name collision, described as a latent trap.
 
 ## Also outstanding
 

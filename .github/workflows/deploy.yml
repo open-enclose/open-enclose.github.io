@@ -37,7 +37,11 @@ jobs:
           node-version: '20'
 
       - name: Install MyST CLI
-        run: npm install -g mystmd
+        # >=1.10 is a hard floor, not a preference: `project.static_files` (which copies the
+        # Pyodide wheel to the site root for content/05-explore.md) is silently ignored by
+        # 1.9.x -- it warns "extra key ignored" and builds a site whose explore page 404s on
+        # the wheel. Capped below 2 so a major release cannot break the build unreviewed.
+        run: npm install -g "mystmd@^1.10"
 
       - name: Build MyST site
         run: myst build --html

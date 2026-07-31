@@ -8,6 +8,7 @@ Two kinds of check:
    plus fresh (not loci-internal) re-derivations of the mu/tau unification established
    during the Phase 1 migration -- see loci.py's module docstring.
 """
+import inspect
 import sys
 from pathlib import Path
 
@@ -19,6 +20,81 @@ from enclose import loci, model  # noqa: E402
 
 ALP, C, CV = loci.ALP, loci.C, loci.CV
 TH = np.array([1.2, 1.4, 1.6, 1.8])
+
+
+# ---------------------------------------------------------------------------
+# Second-best loci extended by governance (mu)
+#
+# These were derived for the interactive wedge panel and are not in the appendix, so they
+# are checked two ways: against the existing mu=0 forms, and against a fresh numerical
+# differentiation of the second-best objective rather than against the algebra that
+# produced them.
+# ---------------------------------------------------------------------------
+
+def _z0_mu(te, th, alp, mu, lbar=1.0):
+    """Second-best objective under governance mu, built straight from its definition:
+    output at the *decentralized* labor allocation l_e^mu. Deliberately not a rearranged
+    closed form -- the point is to check the closed forms against something independent."""
+    le = model.le(te, th, alp, mu)
+    return (th * te**(1 - alp) * le**alp
+            + (1 - te)**(1 - alp) * (1 - le)**alp) * lbar**alp
+
+
+@pytest.mark.parametrize("mu", [0.0, 0.25, 0.5, 0.75, 1.0])
+def test_second_best_loci_solve_the_numerically_differentiated_objective(mu):
+    """ln_ls0_mu and ln_ls1_mu are where dz_0^mu/dt_e equals c at t_e=0 and t_e=1.
+
+    Checked by finite-differencing `_z0_mu`, which is written from the definition. If the
+    hand-derivation in either docstring is wrong, this fails.
+    """
+    h = 1e-6
+    for th in (1.6, 1.9, 2.2):
+        for locus, te in ((loci.ln_ls0_mu, 0.0), (loci.ln_ls1_mu, 1.0)):
+            lbar = np.exp(locus(np.array([th]), mu=mu))[0]
+            if not np.isfinite(lbar):
+                continue
+            lo, hi = (te, te + h) if te == 0.0 else (te - h, te)
+            slope = (_z0_mu(hi, th, ALP, mu, lbar) - _z0_mu(lo, th, ALP, mu, lbar)) / h
+            assert slope == pytest.approx(C, rel=1e-3), f"mu={mu} th={th} te={te}"
+
+
+def test_second_best_mu_loci_reduce_to_the_published_forms_at_mu_zero():
+    """The mu-extended loci must not perturb the mu=0 case the paper's figures already use."""
+    th = np.linspace(1.45, 2.1, 200)
+    assert np.allclose(loci.ln_ls0_mu(th, mu=0.0), loci.ln_lc0(th), equal_nan=True)
+    assert np.allclose(loci.ln_ls1_mu(th, mu=0.0), loci.ln_ld1(th), equal_nan=True)
+
+
+def test_low_tfp_second_best_locus_is_invariant_to_mu():
+    """Eq. (18) compares t_e=0 with t_e=1, and governance acts only at interior t_e:
+    z_0^mu(0)=lbar^alpha and z_0^mu(1)=theta*lbar^alpha, neither carrying Lambda_mu."""
+    for mu in (0.0, 0.5, 1.0):
+        assert _z0_mu(1e-9, 1.6, ALP, mu) == pytest.approx(1.0, rel=1e-4)
+        assert _z0_mu(1 - 1e-9, 1.6, ALP, mu) == pytest.approx(1.6, rel=1e-4)
+
+
+def test_full_enclosure_coincidence_holds_at_mu_zero_and_breaks_above_it():
+    """Appendix eq. (20)'s note that the second-best and private full-enclosure thresholds
+    coincide is a mu=0 statement. `ln_ld1` at tau=0 is mu-invariant; `ln_ls1_mu` is not.
+
+    Scoped to tau=0 and theta >= theta_H^{mu=0} = 1/alpha deliberately: off the tau=0 edge
+    the private locus moves for an unrelated reason, and below theta_H the eq. (20) margin is
+    not the operative condition. See `test_tau_does_not_move_the_second_best_locus`.
+    """
+    th = np.linspace(1.5, 2.1, 100)
+    assert np.allclose(loci.ln_ls1_mu(th, mu=0.0), loci.ln_ld1(th, mu=0.0), equal_nan=True)
+    assert not np.allclose(loci.ln_ls1_mu(th, mu=0.6), loci.ln_ld1(th, mu=0.6), equal_nan=True)
+
+
+def test_tau_does_not_move_the_second_best_locus():
+    """Compensation is a transfer, so it cancels out of the planner's output margin -- the
+    second-best loci take no `tau` at all. The private locus they are compared against does
+    move with it, which is why the eq. (20) coincidence is only readable at tau=0.
+    """
+    for fn in (loci.ln_ls0_mu, loci.ln_ls1_mu):
+        assert "tau" not in inspect.signature(fn).parameters, f"{fn.__name__} grew a tau"
+    th = np.linspace(1.55, 2.1, 50)
+    assert not np.allclose(loci.ln_ld1(th, tau=0.0), loci.ln_ld1(th, tau=0.5), equal_nan=True)
 
 
 # ---------------------------------------------------------------------------

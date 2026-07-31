@@ -47,6 +47,126 @@ def test_appendix_figure_builds(fn, kwargs):
     plt.close(fig)
 
 
+@pytest.mark.parametrize("mu,tau", [
+    (0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0),   # the four combined_4x4 corners
+    (0.5, 0.0), (0.0, 0.5), (0.5, 0.5), (0.35, 0.85),  # the interior a slider reaches
+])
+def test_wedge_panel_builds_across_the_square(mu, tau):
+    """The slider version has to survive every (mu, tau), not just the four hard-coded
+    corners -- including the interior, where the global-games locus is undefined."""
+    fig, ax = figures.wedge_panel(mu=mu, tau=tau)
+    assert fig is not None and ax is not None
+    plt.close(fig)
+
+
+def test_wedge_panel_axes_do_not_move_with_mu_and_tau():
+    """Fixed limits are load-bearing, not cosmetic: under a slider, autoscaled axes make
+    stationary curves look like moving ones and moving ones look stationary."""
+    limits = set()
+    for mu, tau in [(0.0, 0.0), (1.0, 1.0), (0.4, 0.7)]:
+        fig, ax = figures.wedge_panel(mu=mu, tau=tau)
+        limits.add((ax.get_xlim(), ax.get_ylim()))
+        plt.close(fig)
+    assert len(limits) == 1
+
+
+def _selection_curves(ax):
+    """The dashed red global-games curve(s) only.
+
+    Filtering on "not solid" also catches the dotted theta_tau marker `wedge_panel` draws
+    at the domain edge, which is a 2-point vertical line rather than a locus.
+    """
+    return [ln for ln in ax.lines
+            if ln.get_color() == figures.COLOR_DECENTRALIZED
+            and ln.get_linestyle() == "--"]
+
+def test_wedge_panel_draws_the_selection_locus_in_the_interior():
+    """Appendix (27a) supplies the joint (mu, tau) threshold, so the panel no longer has to
+    omit the curve when both parameters are interior.
+
+    This replaces an earlier test asserting the opposite. That test was correct while no
+    combined threshold existed; it encoded a gap in the derivation, not a property of the
+    model, and evaluating the integral closed it.
+    """
+    from enclose import loci
+    edge_fig, edge_ax = figures.wedge_panel(mu=0.0, tau=0.5)
+    interior_fig, interior_ax = figures.wedge_panel(mu=0.5, tau=0.5)
+    assert len(interior_ax.lines) == len(edge_ax.lines)
+
+    # the drawn curve must be the joint locus, not either one-sided substitute
+    drawn = _selection_curves(interior_ax)
+    assert drawn, "no dashed decentralized curve found"
+    x = drawn[-1].get_xdata()
+    np.testing.assert_allclose(drawn[-1].get_ydata(),
+                               loci.ln_gg(x, tau=0.5, mu=0.5), equal_nan=True)
+    plt.close(edge_fig)
+    plt.close(interior_fig)
+
+
+@pytest.mark.parametrize("mu,tau", [(0.0, 0.5), (0.5, 0.5), (0.3, 0.9), (0.0, 1.0)])
+def test_wedge_panel_selection_locus_starts_at_theta_tau(mu, tau):
+    """The curve's left edge is the domain boundary, not the frame edge: below theta_tau the
+    expected return is negative at every density, so the locus does not exist rather than
+    lying off-screen."""
+    from enclose import loci
+    fig, ax = figures.wedge_panel(mu=mu, tau=tau)
+    th_tau = loci.theta_tau(loci.ALP, mu, tau)
+    drawn = _selection_curves(ax)
+    finite_x = np.concatenate([
+        np.asarray(ln.get_xdata(), dtype=float)[
+            np.isfinite(np.asarray(ln.get_ydata(), dtype=float))]
+        for ln in drawn
+    ])
+    assert finite_x.size, "selection locus drawn but entirely non-finite"
+    assert finite_x.min() >= th_tau - 1e-6
+    plt.close(fig)
+
+
+def test_wedge_panel_reports_an_empty_multiplicity_region_at_the_closing_corner():
+    """At mu=tau=1, theta_tau = 1 = theta_H^mu: the interval is empty and the coordination
+    problem disappears at exactly the corner where the wedge closes. The panel must say so
+    rather than drawing nothing silently."""
+    from enclose import loci
+    assert loci.theta_tau(loci.ALP, 1.0, 1.0) == pytest.approx(model.theta_H(loci.ALP, 1.0))
+    fig, ax = figures.wedge_panel(mu=1.0, tau=1.0)
+    assert any("multiplicity" in t.get_text() for t in ax.texts)
+    plt.close(fig)
+
+
+def test_theta_tau_is_the_exact_boundary_of_the_gg_domain():
+    """theta_tau(mu, tau) is where theta*Lambda_mu^alpha - tau changes sign."""
+    from enclose import loci
+    from enclose.model import Lambda
+    for mu, tau in [(0.0, 1.0), (0.0, 0.5), (0.5, 1.0), (0.3, 0.7), (1.0, 1.0)]:
+        tt = loci.theta_tau(loci.ALP, mu, tau)
+        margin = tt * Lambda(tt, loci.ALP, mu)**loci.ALP - tau
+        assert margin == pytest.approx(0.0, abs=1e-12)
+
+
+def test_wedge_panel_second_best_curves_track_mu_and_ignore_tau():
+    """The blue loci must respond to governance and not to compensation. Compared on drawn
+    data rather than on the loci directly, so a wiring mistake in the panel is caught too."""
+    def blue(mu, tau):
+        fig, ax = figures.wedge_panel(mu=mu, tau=tau)
+        ys = [ln.get_ydata() for ln in ax.lines
+              if ln.get_color() == figures.COLOR_PLANNER_BLUE]
+        plt.close(fig)
+        return np.concatenate(ys)
+
+    base = blue(0.0, 0.0)
+    assert np.allclose(base, blue(0.0, 1.0), equal_nan=True), "tau must not move them"
+    assert not np.allclose(base, blue(0.6, 0.0), equal_nan=True), "mu must move them"
+
+
+def test_wedge_panel_closes_the_wedge_at_mu_tau_one():
+    """The paper's Key Result (appendix 5.3) reached continuously rather than by jumping
+    between panels: at mu=tau=1 the decentralized loci sit exactly on the planner's."""
+    from enclose import loci
+    th = np.arange(1.1, 2.1, 0.005)
+    assert np.allclose(loci.ln_ld0(th, tau=1.0, mu=1.0), loci.ln_l01(th), equal_nan=True)
+    assert np.allclose(loci.ln_ld1(th, tau=1.0, mu=1.0), loci.ln_l11(th), equal_nan=True)
+
+
 def test_labor_reaction_orders_the_three_regimes():
     """Appendix Fig. 5's economic content: at theta above theta_H the planner puts more
     labor on enclosed land than open access does, with regulated commons in between.
