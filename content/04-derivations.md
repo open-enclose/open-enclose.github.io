@@ -489,7 +489,7 @@ In the multiplicity region where $\theta < \theta_H$, the unique risk-dominant e
 
 $$E[r(t_e) - c] \geq 0 \Leftrightarrow \bar{l} \geq \bar{l}_{gg}^d \qquad (15)$$
 
-**Derivation Sketch:**
+**Derivation:**
 The global games refinement (Morris and Shin 2003) selects the equilibrium where the expected return to enclosure equals the cost:
 
 $$\int_0^1 r(t_e) dt_e = c$$
@@ -497,9 +497,24 @@ $$\int_0^1 r(t_e) dt_e = c$$
 Substituting $r(t_e)$ from (12):
 $$\int_0^1 \theta(1-\alpha)A\bar{l}^\alpha \cdot \left(\frac{\Lambda}{1+(\Lambda-1)t_e}\right)^\alpha dt_e = c$$
 
-This integral can be evaluated, leading to a threshold $\bar{l}_{gg}^d$ between $\bar{l}_0^d$ and $\bar{l}_1^d$ in the multiplicity region.
+Only the bracket depends on $t_e$. The substitution $u = 1+(\Lambda-1)t_e$ reduces the integral to a power rule:
 
-**Note:** Full analytical derivation requires evaluating the integral, which involves a beta function. The key insight is that this threshold uniquely pins down enclosure behavior in the strategic complements region.
+$$\int_0^1\left(1+(\Lambda-1)t_e\right)^{-\alpha}dt_e
+= \frac{1}{\Lambda-1}\int_1^{\Lambda}u^{-\alpha}\,du
+= \frac{\Lambda^{1-\alpha}-1}{(1-\alpha)(\Lambda-1)}$$
+
+The factor $(1-\alpha)$ cancels, and solving for population density gives the threshold in closed form:
+
+$$\bar{l}_{gg}^d = \left[\frac{(c/A)\left(\Lambda-1\right)}
+{\theta\Lambda^{\alpha}\left(\Lambda^{1-\alpha}-1\right)}\right]^{\frac{1}{\alpha}}$$
+
+Since $\Lambda^{1-\alpha} = \alpha\theta$ by construction of $\Lambda$, this is equivalently
+
+$$\bar{l}_{gg}^d = \left[\frac{(c/A)(1-\Lambda)}{\theta\Lambda^{\alpha}\,(1-\alpha\theta)}\right]^{\frac{1}{\alpha}}$$
+
+which is the form used in the code. In the multiplicity region $\Lambda<1$ and $\alpha\theta<1$, so both the numerator and the denominator are positive.
+
+**Note:** No special functions are needed — the integrand is a power of a linear function of $t_e$. (Earlier versions of this appendix stated that the evaluation involves a beta function and requires numerical integration. Both were incorrect; the closed form above is elementary, and is what the accompanying code has always used.)
 
 *[End of Section 3]*
 
@@ -930,6 +945,65 @@ This generalizes equation (12) to allow for both governance quality ($\mu$) and 
 
 Effects of varying $\mu$ and $\tau$ on equilibrium outcomes.
 ```
+
+---
+
+#### Equation (27a): Global Games Threshold under Governance and Compensation
+
+Equations (13)–(14) generalize to the extended model by substituting (27) for (12), and so
+does the selection criterion of equation (15). The multiplicity region does not disappear
+when $\mu$ or $\tau$ is positive — it is $\theta < \theta_H^\mu$, which is non-empty for
+every $\mu \in [0,1]$ — so a risk-dominance threshold continues to exist there and can be
+written down.
+
+The two rents in (27) share the same dependence on $t_e$, so they combine before integrating:
+
+$$r_\mu^e(t_e) - \tau\,r_\mu^c(t_e)
+= (1-\alpha)A\bar{l}^{\alpha}\left(\theta\Lambda_\mu^{\alpha}-\tau\right)
+\left(1+(\Lambda_\mu-1)t_e\right)^{-\alpha}$$
+
+Applying the same substitution as in (15) gives
+
+$$\bar{l}_{gg}^d(\mu,\tau) = \left[\frac{(c/A)\left(\Lambda_\mu-1\right)}
+{\left(\theta\Lambda_\mu^{\alpha}-\tau\right)\left(\Lambda_\mu^{1-\alpha}-1\right)}
+\right]^{\frac{1}{\alpha}} \qquad (27a)$$
+
+**Properties:**
+
+- At $\mu=\tau=0$ this is equation (15), since $\Lambda_0 = \Lambda$.
+- It is defined where $\theta < \theta_H^\mu$ *and* $\theta\Lambda_\mu^{\alpha} > \tau$. The
+  second condition is substantive: with sufficient compensation the expected return to a
+  raid is negative at every density, and no threshold exists. At $\mu=0$ this bites at
+  $\theta_\tau = \alpha^{-\alpha}$ when $\tau=1$.
+- The governance wedge $A_\mu = 1-\mu(1-\alpha)$ of equations (22)–(23) does **not** appear
+  as a separate factor here. Using $\Lambda_\mu^{1-\alpha} = \alpha\theta/A_\mu$, it enters
+  numerator and denominator alike and cancels, leaving $\mu$ to act only through
+  $\Lambda_\mu$. This is specific to this locus: in the labor-market conditions of §5.1,
+  $A_\mu$ sets the *level* of what labor takes home and does not cancel.
+
+**Comparative statics.** The two institutional parameters move the threshold in opposite
+directions. Compensation raises it: $\tau$ enters only through $(\theta\Lambda_\mu^\alpha -
+\tau)$, so a larger $\tau$ shrinks the expected return and a higher density is needed to
+trigger the cascade. Governance *lowers* it. Raising $\mu$ reduces $A_\mu$, which raises
+$\Lambda_\mu$ and hence the encloser's return $\theta\Lambda_\mu^{\alpha}$ — a regulated
+commons pays labor its marginal rather than its average product, so the outside wage an
+encloser must match is lower. At $\alpha=2/3$, $\theta=0.9$, $\tau=0$:
+
+| $\mu$ | $A_\mu$ | $\Lambda_\mu$ | $\theta\Lambda_\mu^{\alpha}$ | $\ln \bar{l}_{gg}^d$ |
+|---:|---:|---:|---:|---:|
+| 0.0 | 1.000 | 0.216 | 0.324 | 2.700 |
+| 0.3 | 0.900 | 0.296 | 0.400 | 2.495 |
+| 0.6 | 0.800 | 0.422 | 0.506 | 2.279 |
+| 1.0 | 0.667 | 0.729 | 0.729 | 1.970 |
+
+Better commons governance therefore makes the enclosure race easier to trigger, at the same
+time as it shrinks the region in which a race is possible at all, since $\theta_H^\mu$ falls
+from $1/\alpha$ to $1$ over the same range. The two effects work against each other, and
+which dominates is a quantitative question.
+
+*Verification:* (27a) was checked against symbolic integration, against numerical quadrature
+of the payoff, and by reduction to the two one-sided forms already implemented in the code —
+equation (15) extended in $\tau$ at $\mu=0$, and the $\mu$-extended form at $\tau=0$.
 
 ---
 
@@ -1397,7 +1471,7 @@ print(f"z_0 convex (low-TFP)? {np.all(z0_second_diff_low > -1e-6)}")
 ## References for Computational Methods
 
 - **Cobb-Douglas Properties**: All derivations exploit homogeneity and the relationship between marginal and average products
-- **Numerical Integration**: Equation (15) requires numerical integration for the global games threshold
+- **Closed-Form Integration**: The expectation in equation (15) — and its extension (27a) — integrates in closed form by the power rule; no quadrature or special functions are required
 - **Root Finding**: Interior solutions (equations 6, 7, 13, 14, 19, 20) are found by setting derivatives equal to costs
 - **Parameter Space Partitioning**: Threshold loci divide $(\theta, \ln\bar{l})$ space into regions
 
