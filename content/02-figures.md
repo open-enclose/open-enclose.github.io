@@ -107,5 +107,5 @@ Two mechanisms, because figures are easy to get quietly wrong:
   within the axis-label wording that was deliberately standardised.
 
 ```bash
-pytest tests/          # 190 tests
+pytest tests/
 ```

@@ -32,7 +32,7 @@ cd open-enclose.github.io
 pip install -e ".[dev]"
 
 python scripts/make_figures.py --outdir Figures   # regenerate every figure
-pytest tests/                                      # 105 tests
+pytest tests/                                      # the full suite
 ```
 
 The `enclose` package is layered so that each piece can be checked against another:
