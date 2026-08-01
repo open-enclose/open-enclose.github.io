@@ -23,7 +23,15 @@ jobs:
           python-version: '3.11'
 
       - name: Install enclose package
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[dev]" build
+
+      - name: Rebuild the Pyodide wheel
+        # content/05-explore.md runs this wheel in the browser rather than the repo's
+        # source, so a checked-in wheel goes stale the moment any module changes -- it
+        # once shipped a wedge_panel predating the joint (mu,tau) selection locus. Built
+        # here, before the tests, for the same reason Figures/ is regenerated below: what
+        # the site serves is what the suite then passes against.
+        run: python scripts/build_wheel.py
 
       - name: Run tests
         run: pytest tests/
