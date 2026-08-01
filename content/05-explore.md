@@ -81,15 +81,31 @@ await micropip.install(["numpy", "matplotlib", "ipywidgets>=8,<9"])
 # "Micropip internal error: attempted to install wheel before downloading it?". Fetching
 # explicitly also means a bad path fails here, with a status code you can read, instead of
 # surfacing as an internal error several frames deep in micropip.
-resp = await pyfetch(WHEEL_URL)
+#
+# cache="no-store" is load-bearing. The wheel's filename never changes, so every deploy
+# replaces a URL the browser may already hold, and GitHub Pages serves it with
+# `Cache-Control: max-age=600`. Without this a reader gets up to ten minutes of the previous
+# build's model code while the surrounding page is current -- which is not a hypothetical:
+# it shipped a heatmap with white gridlines and no axis labels after both had been fixed,
+# deployed and verified on the server. There is no build step here to hash the filename
+# with, so the fetch declines the cache instead.
+resp = await pyfetch(WHEEL_URL, cache="no-store")
 if resp.status != 200:
     raise RuntimeError(f"HTTP {resp.status} fetching {WHEEL_URL}")
+wheel_bytes = await resp.bytes()
 with open(WHEEL_NAME, "wb") as fh:
-    fh.write(await resp.bytes())
+    fh.write(wheel_bytes)
 
 # `emfs:` means "a wheel already sitting in the Emscripten virtual filesystem".
 await micropip.install(f"emfs:{WHEEL_NAME}", deps=False)
 
+# Fingerprint what actually got installed, reported by the next cell (this one's output is
+# hidden, and micropip is noisy). If a figure here ever disagrees with the source on GitHub,
+# this is the first thing to check.
+import hashlib
+
+WHEEL_SHA = hashlib.sha256(wheel_bytes).hexdigest()[:12]
+WHEEL_SIZE = len(wheel_bytes)
 print("installed from", WHEEL_URL)
 ```
 
@@ -101,6 +117,7 @@ import matplotlib.pyplot as plt
 from enclose import figures, loci, model, welfare
 
 print("enclose", __import__("enclose").__version__, "loaded in the browser")
+print(f"wheel {WHEEL_SIZE:,} bytes, sha256 {WHEEL_SHA}")
 ```
 
 ## A figure, rendered here rather than shipped
@@ -317,8 +334,19 @@ Three things can fail independently:
 - **The sliders render but do nothing.** That is the `ipywidgets`↔JupyterLite pairing, not
   the model — the figures above the sliders will still be correct.
 
+- **A figure looks like an older version of itself.** The wheel's filename is fixed, so each
+  deploy replaces a URL your browser may already hold. The setup cell fetches with
+  `cache="no-store"` to prevent that, but a kernel already running from a previous visit has
+  `enclose` imported and will not re-import it. Reload the page, which restarts the kernel.
+  The sha256 printed by the second cell tells you which build you are on: compare it against
+  a clone with
+
+  ```bash
+  python -c "import hashlib;print(hashlib.sha256(open('pyodide/enclose-0.1.0-py3-none-any.whl','rb').read()).hexdigest()[:12])"
+  ```
+
 The wheel is committed at `pyodide/enclose-0.1.0-py3-none-any.whl`, rebuilt by CI ahead of the
-test suite, and byte-compared against the source by `tests/test_wheel.py` — so what runs here
-cannot lag what the tests pass against. If a result here still disagrees with the
-[figures page](02-figures.md),
-[open an issue](https://github.com/open-enclose/open-enclose.github.io/issues).
+test suite, and byte-compared against the source by `tests/test_wheel.py` — so what the *site
+serves* cannot lag what the tests pass against. Caching is a separate matter, handled above.
+If a result here still disagrees with the [figures page](02-figures.md) once the fingerprints
+match, [open an issue](https://github.com/open-enclose/open-enclose.github.io/issues).
