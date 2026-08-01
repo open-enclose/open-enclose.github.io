@@ -193,12 +193,13 @@ orderings and the identity at every grid point rather than taking them on trust.
 :tags: [hide-input]
 from ipywidgets import Dropdown
 
-def losses(mu=0.0, tau=0.0, component="total", normalize="ratio"):
-    figures.loss_panel(mu=mu, tau=tau, component=component, normalize=normalize, n=61)
+def losses(mu=0.0, tau=0.0, component="total", normalize="ratio", n=121):
+    figures.loss_panel(mu=mu, tau=tau, component=component, normalize=normalize, n=n)
     plt.show()
 
 # continuous_update=False: each redraw is a full grid solve, so recompute on release rather
-# than on every pixel of the drag.
+# than on every pixel of the drag. Drop `grid` to 61 if that still feels slow -- cost is
+# quadratic in it, and no conclusion on this page depends on the resolution.
 interact(
     losses,
     mu=FloatSlider(value=0.0, min=0.0, max=1.0, step=0.05, continuous_update=False,
@@ -209,6 +210,8 @@ interact(
                        description="component", style={"description_width": "initial"}),
     normalize=Dropdown(options=list(welfare.NORM_LABEL), value="ratio",
                        description="normalize", style={"description_width": "initial"}),
+    n=Dropdown(options=[61, 91, 121, 161], value=121,
+               description="grid", style={"description_width": "initial"}),
 );
 ```
 

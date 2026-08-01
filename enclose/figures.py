@@ -574,10 +574,16 @@ def wedge_panel(mu=0.0, tau=0.0, ax=None, second_best=True, figsize=(7.5, 6)):
 
     ax.set_xlim(*_WEDGE_XLIM)
     ax.set_ylim(*_WEDGE_YLIM)
-    ax.set_title(rf"$\mu={mu:.2f}$,  $\tau={tau:.2f}$"
-                 rf"    ($\theta_H^\mu={th_H:.2f}$)", fontsize=15)
+    # theta_H^mu is no longer repeated here -- the x-axis tick below carries its value.
+    ax.set_title(rf"$\mu={mu:.2f}$,  $\tau={tau:.2f}$", fontsize=15)
     common_labels(ax, fontsize=12)
     style_axes(ax)
+    # After style_axes, which clears all ticks. Naming the two verticals on the axis is the
+    # cheapest way to say what they are; theta_H^mu carries its value because it moves with
+    # the mu slider, while theta=1 never does.
+    ax.set_xticks([1.0, th_H])
+    ax.set_xticklabels([r"$\theta=1$", rf"$\theta_H^\mu={th_H:.2f}$"], fontsize=11)
+    ax.tick_params(axis="x", length=4, pad=2)
 
     if gg_note is not None:
         ax.annotate(gg_note, xy=(0.03, 0.03), xycoords="axes fraction", fontsize=9,
@@ -962,13 +968,20 @@ def structural_transformation(alp=0.5, mu=0.0, b=0.5, tbar=1.0, kb=1.0, p=1.0):
 # Foregone-output heatmap (enclose.welfare)
 # ---------------------------------------------------------------------------
 
-def loss_panel(mu=0.0, tau=0.0, component="total", normalize="ratio", n=61, ax=None,
+def loss_panel(mu=0.0, tau=0.0, component="total", normalize="ratio", n=121, ax=None,
                vmax=None, th_lo=0.90, th_hi=2.30, lnl_lo=-1.0, lnl_hi=4.0):
     r"""Foregone output over the $(\theta, \ln\bar l)$ plane. Returns (fig, ax, surfaces).
 
-    Sized for a slider. `n=61` is about 0.2 s natively and around a second under Pyodide;
-    `n=161` is ~1.3 s and better suited to a figure for print than to a control someone is
-    dragging.
+    Cost is quadratic in `n` up to a knee: measured 0.29 s at `n=61`, 1.04 s at `n=121`, then
+    3.85 s at `n=141`. `n=121` is the default because it sits just below that knee while
+    halving the cell size of the old 61, which was visibly blocky. Under Pyodide expect
+    roughly three times these figures, which is why the page pairs it with
+    `continuous_update=False`.
+
+    Resist the temptation to smooth the blockiness with `shading="gouraud"` instead of more
+    grid points. Below $\theta_H$ the global-games selection jumps between corners, so the
+    surface has genuine cliffs; interpolating across them would draw a gentle slope where the
+    model has a discontinuity.
 
     `component` and `normalize` are the keys of `welfare.COMP_LABEL` and
     `welfare.NORM_LABEL` — see `welfare.loss_surface`, and note that the three
@@ -1012,15 +1025,26 @@ def loss_panel(mu=0.0, tau=0.0, component="total", normalize="ratio", n=61, ax=N
         ax.plot(th, loci.ln_ld0(th, tau=tau, mu=mu), color="deepskyblue", lw=2)
         ax.plot(th, loci.ln_ld1(th, tau=tau, mu=mu), color="deepskyblue", lw=2)
 
-    ax.axvline(1.0, color="white", ls=":", lw=1.2)
-    ax.axvline(model.theta_H(ALP, mu), color="white", ls=":", lw=1.2)
+    # Black, not white: most of this colormap's range is pale, so white verticals vanish
+    # everywhere except inside the loss band -- which is the one place they are least needed.
+    th_H = model.theta_H(ALP, mu)
+    ax.axvline(1.0, color="black", ls=":", lw=1.3)
+    ax.axvline(th_H, color="black", ls=":", lw=1.3)
     ax.set_xlim(th.min(), th.max())
     ax.set_ylim(lnl.min(), lnl.max())
     ax.set_xlabel(r"$\theta$ (rel. TFP)", fontsize=12)
     ax.set_ylabel(r"$\ln(\bar l)$ (log population density)", fontsize=12)
+    # Named thresholds go on a second axis so the numeric theta scale below stays readable;
+    # on the wedge panel, which has no numeric ticks at all, they go on the axis itself.
+    top = ax.secondary_xaxis("top")
+    top.set_xticks([1.0, th_H])
+    top.set_xticklabels([r"$\theta=1$", rf"$\theta_H^\mu={th_H:.2f}$"], fontsize=10)
     unit = "%" if normalize == "ratio" else ""
+    # pad clears the secondary top axis, whose tick labels occupy the space set_title would
+    # otherwise use.
     ax.set_title(
         rf"$\mu={mu:.2f}$, $\tau={tau:.2f}$  ·  {welfare.COMP_LABEL[component]}, "
         f"{welfare.NORM_LABEL[normalize]}"
-        f"\nmean {M.mean():.3g}{unit}   max {M.max():.3g}{unit}", fontsize=11)
+        f"\nmean {M.mean():.3g}{unit}   max {M.max():.3g}{unit}", fontsize=11, pad=26)
+    fig.tight_layout()
     return fig, ax, S
