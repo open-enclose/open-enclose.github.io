@@ -270,7 +270,11 @@ $t_e\in[0,1]$ rather than evaluating it at an endpoint gives the $\tau$-extended
 global-games locus in the same way as before.
 
 At $\tau=1$ the locus diverges at $\theta = \alpha^{-\alpha}$: with full compensation, no
-population density makes a raid profitable below that productivity gain.
+population density makes enclosure profitable below that productivity gain. This is a
+statement about profitability, not about expropriation — at $\tau=1$ nothing is
+expropriated at all. The paper's "raid," the wholly uncompensated taking, is the $\tau=0$
+corner; the divergence here is the opposite corner, where the encloser pays in full and the
+land is simply not worth the price.
 
 ### Both together
 

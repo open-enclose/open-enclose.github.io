@@ -520,9 +520,12 @@ def wedge_panel(mu=0.0, tau=0.0, ax=None, second_best=True, figsize=(7.5, 6)):
     # Appendix (27a) gives the joint (mu, tau) form, so this is no longer restricted to the
     # two edges. It lives on theta_tau < theta < theta_H^mu, squeezed from the left by
     # compensation and from the right by governance, and the two edges mean different
-    # things: at theta_H^mu the multiplicity region itself ends, while below theta_tau no
-    # density makes a raid pay -- both rents scale with lbar^alpha, so density cancels out
-    # of the sign. `ln_gg` returns +inf outside the interval, which matplotlib skips.
+    # things. At theta_H^mu the multiplicity region itself ends. theta_tau is not a
+    # property of the selection problem at all: the factor (theta*Lam^alpha - tau) sits in
+    # ln_ld0 and ln_ld1 too, so all three decentralized loci vanish together below it.
+    # There, enclosure earns less than the compensation it owes, at any density -- both
+    # rents scale with lbar^alpha, so density cancels out of the sign.
+    # `ln_gg` returns +inf outside the interval, which matplotlib skips.
     th_tau = loci.theta_tau(ALP, mu, tau)
     if th_tau < th_H:
         the_gg = np.arange(max(0.8, th_tau), th_H, 0.002)
@@ -533,8 +536,11 @@ def wedge_panel(mu=0.0, tau=0.0, ax=None, second_best=True, figsize=(7.5, 6)):
         if tau > 0 and th_tau > _WEDGE_XLIM[0]:
             ax.axvline(th_tau, color=COLOR_DECENTRALIZED, linestyle=":", linewidth=1,
                        alpha=0.7)
-            gg_note = (rf"$\theta_\tau={th_tau:.2f}$: below this no" "\n"
-                       "density makes a raid pay")
+            # Not "no raid pays": the paper reserves *raid* for the uncompensated tau=0
+            # taking, and at tau>0 every enclosure above theta_tau is a partly-compensated
+            # one. What fails below theta_tau is profitability, not the transfer.
+            gg_note = (rf"$\theta_\tau={th_tau:.2f}$: below this, enclosure earns" "\n"
+                       "less than the compensation it owes, at any density")
         else:
             gg_note = None
     else:
@@ -694,7 +700,9 @@ def _traj_panel_b(ax):
     th_tau = np.linspace(_TRAJ_THETA_TAU + 1e-4, CV - 1e-6, 800)
     ax.plot(th_tau, loci.ln_gg(th_tau, tau=1.0), color="darkred", linewidth=2)
     ax.text(1.515, 2.85, r"$\bar l^d_{gg}(\tau\!=\!1)$", fontsize=13, ha="left", color="darkred", bbox=_WBOX)
-    ax.text(1.245, 3.82, r"$\to\infty$: no raid pays for" "\n" r"$\theta<\alpha^{-\alpha}$ when $\tau=1$",
+    # "no raid" would be exactly backwards here: tau=1 is *full* compensation, so nothing
+    # is being taken. Enclosure simply does not cover what it must pay.
+    ax.text(1.245, 3.82, r"$\to\infty$: enclosure never covers $\tau$" "\n" r"for $\theta<\alpha^{-\alpha}$ when $\tau=1$",
             fontsize=9, ha="center", va="center", style="italic", color="darkred", bbox=_WBOX)
 
     x = 1.46

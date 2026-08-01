@@ -269,3 +269,41 @@ def test_loci_sanity_checks_function_runs_clean():
     """loci.py's own sanity_checks() (mirrors these tests, kept for parity with
     generate_trajectories_figure.py's convention) must not raise."""
     loci.sanity_checks()
+
+
+# ---------------------------------------------------------------------------
+# theta_tau bounds the whole decentralized family, not just the selection locus
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("mu,tau", [(0.0, 1.0), (0.35, 0.35), (0.65, 0.5), (0.5, 0.9)])
+def test_theta_tau_truncates_all_three_decentralized_loci(mu, tau):
+    """theta_tau is easy to mistake for a property of the coordination problem, because it
+    is the left edge of the region ln_gg is drawn on. It is not: the factor
+    (theta*Lambda_mu^alpha - tau) sits in eq. (14) and eq. (15) too, so ln_ld0 and ln_ld1
+    go undefined at exactly the same theta. A figure or docstring that attributes the edge
+    to selection alone is wrong, and this pins that down."""
+    tt = loci.theta_tau(loci.ALP, mu, tau)
+    assert tt > 0.5, "pick parameters where the boundary actually binds"
+
+    below, above = np.array([tt - 1e-3]), np.array([tt + 1e-3])
+    for name in ("ln_ld0", "ln_ld1", "ln_gg"):
+        f = getattr(loci, name)
+        assert not np.isfinite(f(below, tau=tau, mu=mu)[0]), f"{name} defined below theta_tau"
+        assert np.isfinite(f(above, tau=tau, mu=mu)[0]), f"{name} undefined above theta_tau"
+
+
+@pytest.mark.parametrize("mu,tau", [(0.35, 0.35), (0.65, 0.5)])
+def test_theta_tau_boundary_is_density_free(mu, tau):
+    """Why no density rescues enclosure below theta_tau: the enclosure rent and the
+    compensation owed both scale with lbar^alpha, so their ratio is theta*Lambda^alpha/tau
+    with no lbar in it. Scaling density scales a negative number."""
+    th = loci.theta_tau(loci.ALP, mu, tau) - 0.01
+    lam = loci.lam_mu(np.array([th]), loci.ALP, mu)[0]
+    ratios = []
+    for lbar in (1.0, 1e3, 1e9):
+        r_e = (1 - loci.ALP) * th * lam**loci.ALP * lbar**loci.ALP
+        comp = tau * (1 - loci.ALP) * lbar**loci.ALP
+        assert r_e - comp < 0, "should be unprofitable below theta_tau at every density"
+        ratios.append(r_e / comp)
+    assert np.allclose(ratios, ratios[0], rtol=1e-12), "ratio must not depend on lbar"
+    assert ratios[0] == pytest.approx(th * lam**loci.ALP / tau, rel=1e-12)

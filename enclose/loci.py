@@ -97,16 +97,27 @@ def ln_ld1(th, alp=ALP, c=C, tau=0.0, mu=0.0):
 
 
 def theta_tau(alp=ALP, mu=0.0, tau=0.0):
-    r"""Lower edge of the global-games domain, appendix eq. (27a).
+    r"""Lower edge of the whole decentralized family, appendix eq. (27b).
 
     $$\theta_\tau(\mu,\tau) = \tau^{1-\alpha}\left(\frac{A_\mu}{\alpha}\right)^{\alpha},
       \qquad A_\mu = 1-\mu(1-\alpha)$$
 
-    Below this, $\theta\Lambda_\mu^\alpha < \tau$ and the expected return to a raid is
-    negative **at every density** — both rents scale with $\bar l^\alpha$, so density
-    cancels out of the sign and cannot rescue it. The threshold does not move out of view;
-    it ceases to exist. Contrast the enclosure cost $c$, a level charge that density always
-    eventually outruns, which is why every other locus is finite everywhere.
+    Below this, $\theta\Lambda_\mu^\alpha < \tau$: the rent a unit of enclosed land earns
+    is smaller than the compensation owed on it, so the net return is negative **at every
+    density**. Both rents scale with $\bar l^\alpha$, so the ratio
+    $\theta\Lambda_\mu^\alpha/\tau$ is density-free and no $\bar l$ can rescue it. Contrast
+    the enclosure cost $c$, a level charge density always eventually outruns.
+
+    This is *not* a property of the selection problem, despite bounding `ln_gg`. The factor
+    $(\theta\Lambda_\mu^\alpha-\tau)$ sits in `ln_ld0` (eq. 14) and `ln_ld1` (eq. 15) as
+    well, so all three decentralized loci go undefined together at $\theta_\tau$ —
+    asserted in `tests/test_loci.py`.
+
+    Nor does it mark where enclosure stops being a *taking*. At any $\tau<1$ the encloser
+    pays only a fraction of the commons rent it extinguishes, above and below $\theta_\tau$
+    alike; the paper's "raid" is the $\tau=0$ corner of that, not this boundary. What
+    changes here is whether the taking is worth making: below $\theta_\tau$ the land is too
+    unproductive to be worth enclosing even at a discount.
 
     At $\mu=0,\tau=1$ this is $\alpha^{-\alpha}$. At $\tau=0$ it is $0$ — no restriction.
     """
@@ -123,8 +134,10 @@ def ln_gg(th, alp=ALP, c=C, tau=0.0, mu=0.0):
 
     Defined on the interval $\theta_\tau(\mu,\tau) < \theta < \theta_H^\mu$ — squeezed from
     the left by compensation and from the right by governance — and $+\infty$ outside it.
-    The two edges mean different things: at $\theta_H^\mu$ the multiplicity region itself
-    ends, while below $\theta_\tau$ no density makes a raid pay (see `theta_tau`).
+    The two edges mean different things. At $\theta_H^\mu$ the multiplicity region itself
+    ends — that edge belongs to this locus. $\theta_\tau$ does not: it is where enclosure
+    stops covering the compensation it owes, and it truncates `ln_ld0` and `ln_ld1`
+    identically (see `theta_tau`).
 
     The governance wedge $A_\mu$ does not appear separately: with
     $\Lambda_\mu^{1-\alpha} = \alpha\theta/A_\mu$ it enters numerator and denominator alike
