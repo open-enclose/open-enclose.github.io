@@ -533,16 +533,17 @@ def wedge_panel(mu=0.0, tau=0.0, ax=None, second_best=True, figsize=(7.5, 6)):
                 linestyle=LINESTYLE_SELECTION, linewidth=2)
         # Mark the left edge only when compensation is what creates it, i.e. when it sits
         # inside the plotted range rather than at theta_tau = 0.
+        #
+        # The line carries no caption. Every wording tried here needed a paragraph the
+        # figure cannot hold: "no raid pays" was simply wrong (the paper's *raid* is the
+        # tau=0 taking, and enclosures above theta_tau at tau<1 are takings too), and the
+        # accurate replacement -- enclosure earning less than the compensation it owes --
+        # reads as a claim about welfare rather than about profitability. The asymptote is
+        # legible without a label; the explanation belongs in the prose, not the axes.
         if tau > 0 and th_tau > _WEDGE_XLIM[0]:
             ax.axvline(th_tau, color=COLOR_DECENTRALIZED, linestyle=":", linewidth=1,
                        alpha=0.7)
-            # Not "no raid pays": the paper reserves *raid* for the uncompensated tau=0
-            # taking, and at tau>0 every enclosure above theta_tau is a partly-compensated
-            # one. What fails below theta_tau is profitability, not the transfer.
-            gg_note = (rf"$\theta_\tau={th_tau:.2f}$: below this, enclosure earns" "\n"
-                       "less than the compensation it owes, at any density")
-        else:
-            gg_note = None
+        gg_note = None
     else:
         # theta_tau has overtaken theta_H^mu -- the interval is empty and the coordination
         # problem is gone entirely. Happens only at mu = tau = 1, where both are 1.
