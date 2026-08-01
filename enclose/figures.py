@@ -10,6 +10,7 @@ call `enclose.loci` instead of its own inline copies of the same formulas.
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as pe
 from matplotlib.patches import Polygon as MplPolygon
 
 from . import loci, model, welfare
@@ -1019,17 +1020,51 @@ def loss_panel(mu=0.0, tau=0.0, component="total", normalize="ratio", n=121, ax=
     cb.set_label(f"{welfare.COMP_LABEL[component]}, {welfare.NORM_LABEL[normalize]}",
                  fontsize=11)
 
+    th_H = model.theta_H(ALP, mu)
+
+    # Same loci, same colours, same linestyles as `wedge_panel` -- black planner band, red
+    # decentralized band, red dashed selection locus, blue dashed second-best. Reading the
+    # two panels together is the point of stacking them, and that fails if red means
+    # "decentralized" above and nothing below. What is *not* carried over is the shaded
+    # region fills: here the heatmap is the fill, and washing it out with two more translucent
+    # layers would defeat the figure.
+    #
+    # Every line gets a white halo. On magma_r a red curve is invisible exactly where it
+    # matters -- inside the loss band, which is orange to red -- and a black one disappears
+    # at the dark end. The halo makes the paper's palette legible on any background instead
+    # of forcing a palette that happens to contrast with this colormap (which is how the
+    # decentralized loci ended up sky blue and unrecognisable in the first place).
+    halo = [pe.withStroke(linewidth=3.0, foreground="white")]
+
     with np.errstate(invalid="ignore"):
-        ax.plot(th, loci.ln_l01(th), color="black", lw=2)
-        ax.plot(th, loci.ln_l11(th), color="black", lw=2)
-        ax.plot(th, loci.ln_ld0(th, tau=tau, mu=mu), color="deepskyblue", lw=2)
-        ax.plot(th, loci.ln_ld1(th, tau=tau, mu=mu), color="deepskyblue", lw=2)
+        for curve in (loci.ln_l01(th), loci.ln_l11(th)):
+            ax.plot(th, curve, color=COLOR_PLANNER_BLACK, lw=2, path_effects=halo)
+        for curve in (loci.ln_ld0(th, tau=tau, mu=mu), loci.ln_ld1(th, tau=tau, mu=mu)):
+            ax.plot(th, curve, color=COLOR_DECENTRALIZED, lw=2, path_effects=halo)
+
+        # Eq. (19)/(20) arguments go negative on the wrong side of theta_H^mu; masked here,
+        # so the NaNs are expected rather than a bug.
+        ls = np.where(th < th_H, loci.ln_ls(th), np.nan)
+        ls0 = np.where(th > th_H, loci.ln_ls0_mu(th, mu=mu), np.nan)
+        ls1 = np.where(th > th_H, loci.ln_ls1_mu(th, mu=mu), np.nan)
+        for curve in (ls, ls0, ls1):
+            ax.plot(th, curve, color=COLOR_PLANNER_BLUE, lw=2,
+                    linestyle=LINESTYLE_SELECTION, path_effects=halo)
+
+        # The selection locus, on its real domain -- see `wedge_panel` and `loci.theta_tau`.
+        th_tau = loci.theta_tau(ALP, mu, tau)
+        if th_tau < th_H:
+            the_gg = np.arange(max(th.min(), th_tau), th_H, 0.002)
+            ax.plot(the_gg, loci.ln_gg(the_gg, tau=tau, mu=mu), color=COLOR_DECENTRALIZED,
+                    linestyle=LINESTYLE_SELECTION, lw=2, path_effects=halo)
+            if tau > 0 and th_tau > th.min():
+                ax.axvline(th_tau, color=COLOR_DECENTRALIZED, linestyle=LINESTYLE_THRESHOLD,
+                           lw=1.2, alpha=0.8, path_effects=halo)
 
     # Black, not white: most of this colormap's range is pale, so white verticals vanish
     # everywhere except inside the loss band -- which is the one place they are least needed.
-    th_H = model.theta_H(ALP, mu)
-    ax.axvline(1.0, color="black", ls=":", lw=1.3)
-    ax.axvline(th_H, color="black", ls=":", lw=1.3)
+    ax.axvline(1.0, color="black", ls=LINESTYLE_THRESHOLD, lw=1.3, path_effects=halo)
+    ax.axvline(th_H, color="black", ls=LINESTYLE_THRESHOLD, lw=1.3, path_effects=halo)
     ax.set_xlim(th.min(), th.max())
     ax.set_ylim(lnl.min(), lnl.max())
     ax.set_xlabel(r"$\theta$ (rel. TFP)", fontsize=12)
