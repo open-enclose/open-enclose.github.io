@@ -9,10 +9,12 @@ kernelspec:
 # Explore the Model in Your Browser
 
 Every other page on this site shows figures that were rendered ahead of time. This one does
-not. The code cells below run **in your browser** — no server, no account, no install — and
-they call the same [`enclose`](https://github.com/open-enclose/open-enclose.github.io/tree/main/enclose)
+not. The cells below run **in your browser** — no server, no account, no install — and they
+call the same [`enclose`](https://github.com/open-enclose/open-enclose.github.io/tree/main/enclose)
 package that generates the paper's figures. Nothing here is a second implementation of the
 model; that is the whole point of the package existing.
+
+The source of each cell is collapsed. Use the toggle on a cell to read or edit it.
 
 :::{warning} First load is slow, and needs a CDN
 Starting the kernel downloads a Python runtime and the scientific stack — tens of megabytes.
@@ -44,7 +46,7 @@ the first cell installs it from this site.
 ## Setup
 
 ```{code-cell} python
-:tags: [hide-output]
+:tags: [hide-input, hide-output]
 import micropip
 import js
 from pyodide.http import pyfetch
@@ -92,6 +94,7 @@ print("installed from", WHEEL_URL)
 ```
 
 ```{code-cell} python
+:tags: [hide-input]
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -106,6 +109,7 @@ The same call that produces `social_opt_cond.png` in the paper. If this renders,
 path works: wheel delivery, Pyodide, matplotlib, and the package's own figure code.
 
 ```{code-cell} python
+:tags: [hide-input]
 fig, ax = figures.social_optimum(cond_opt=True)
 ```
 
@@ -122,8 +126,7 @@ instead.
   the first-best is defined without reference to them.
 - **Red** is the decentralized band. It moves with both sliders.
 - **Dashed blue** are the second-best loci — the constrained planner, who takes the
-  decentralized labor allocation as given but chooses $t_e$. These move with $\mu$ **only**;
-  see the note below.
+  decentralized labor allocation as given but chooses $t_e$. These move with $\mu$ **only**.
 - The dotted verticals are $\theta = 1$ and $\theta_H^\mu$. The second one moves with $\mu$:
   it is $1/\alpha - \mu(1-\alpha)/\alpha$, and it is also where the second-best objective
   switches from convex to concave.
@@ -134,6 +137,7 @@ compensation are *both* complete. Neither alone suffices, which you can check by
 slider to 1 while leaving the other at 0.
 
 ```{code-cell} python
+:tags: [hide-input]
 from ipywidgets import interact, FloatSlider
 
 def wedge(mu=0.0, tau=0.0):
@@ -149,33 +153,10 @@ interact(
 );
 ```
 
-:::{note} Why the blue curves respond to $\mu$ but not to $\tau$
-The second-best planner "respects the labor allocation that emerges from decentralized labor
-markets but can control the enclosure rate" (appendix §4.1). Governance changes that
-allocation — $\Lambda \to \Lambda_\mu$ runs right through the objective — so the constrained
-optimum moves with $\mu$. Compensation does not: $\tau$ is a transfer from encloser to
-commoners, so it cancels out of total output and cannot shift a locus derived from the
-planner's output margin. It moves the red private loci alone. The paper's Figure 6 says the
-same thing without commenting on it: panel (c) is $\mu=0,\tau=1$ and carries exactly the blue
-curves of panel (a), $\mu=0,\tau=0$.
-
-Two of the three move. Eq. (18), the low-TFP full-versus-none comparison, is $\mu$-invariant
-— it compares $t_e=0$ against $t_e=1$, and at neither corner is there a partly-enclosed
-commons for governance to act on.
-:::
-
-:::{note} Why the dashed red curve disappears in the interior
-The dashed red curve is the global-games selection locus, and it is drawn only when one of
-the two parameters is zero. `ln_gg` is extended in $\tau$ but derived for $\mu=0$; `ln_gg_mu`
-is extended in $\mu$ but derived for $\tau=0$. A combined $(\mu,\tau)$ risk-dominance
-threshold appears nowhere in the appendix or the codebase. Rather than draw one of the
-one-sided loci where neither applies, the panel omits it and labels the omission — the two
-are not the same object, and interpolating between them would be inventing a result.
-:::
-
 The four corners, side by side, are the paper's Figure 6:
 
 ```{code-cell} python
+:tags: [hide-input]
 fig, ax = figures.combined_4x4()
 ```
 
@@ -185,6 +166,7 @@ Every locus is a plain function of $\theta$, so anything on this page can be reb
 parts. Edit the cell below and re-run it.
 
 ```{code-cell} python
+:tags: [hide-input]
 theta = np.linspace(1.01, 2.5, 300)
 
 fig, ax = plt.subplots(figsize=(7, 5))
@@ -217,7 +199,8 @@ Three things can fail independently:
 - **The sliders render but do nothing.** That is the `ipywidgets`↔JupyterLite pairing, not
   the model — the figures above the sliders will still be correct.
 
-The wheel is committed at `pyodide/enclose-0.1.0-py3-none-any.whl` and is rebuilt by hand, so
-it can lag the source. If a result here disagrees with the
-[figures page](02-figures.md), trust the figures page and
+The wheel is committed at `pyodide/enclose-0.1.0-py3-none-any.whl`, rebuilt by CI ahead of the
+test suite, and byte-compared against the source by `tests/test_wheel.py` — so what runs here
+cannot lag what the tests pass against. If a result here still disagrees with the
+[figures page](02-figures.md),
 [open an issue](https://github.com/open-enclose/open-enclose.github.io/issues).
