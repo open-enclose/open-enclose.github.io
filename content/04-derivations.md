@@ -21,21 +21,50 @@ This online appendix provides complete mathematical derivations for all numbered
 - Section 6: Applications and Extensions (Equations 28-43)
 - Appendix G: Computational Verification
 
-**Notation:**
-- $t_e$: share of land enclosed
-- $l_e$: share of labor in enclosed sector
-- $l_c$, $l_m$: share of labor in the commons and in manufacturing (§6.4)
-- $\bar{T}$, $\bar{L}$, $\bar{K}$: total land, labor and (manufacturing) capital endowments
-- $\bar{l} = \bar{L}/\bar{T}$: population density; $\bar t = \bar T/\bar L$, $\bar k = \bar K/\bar L$ (§6.4)
-- $\alpha \in (0,1)$: labor share in Cobb-Douglas production
-- $\beta \in (0,1)$: labor share in manufacturing (§6.4)
-- $\theta > 0$: relative TFP gain in enclosed sector
-- $p > 0$: relative price of manufactures (§6.4)
-- $c > 0$: per-unit cost of enclosure
-- $A > 0$: base total factor productivity
-- $\mu \in [0,1]$: governance/regulation parameter
-- $A_\mu = 1-\mu(1-\alpha)$: share of the commons average product that labor retains, eq. (37)
-- $\tau \in [0,1]$: compensation/power parameter
+## Notation
+
+The paper's symbol table, with a column added for the corresponding name in the
+[`enclose`](https://github.com/open-enclose/open-enclose.github.io/tree/main/enclose)
+package — so a symbol here can be traced to the code that computes it.
+
+| Symbol | Meaning | Effect of an increase | Key thresholds | In code |
+|---|---|---|---|---|
+| $\theta$ | TFP gain on enclosed land ($\theta = A_e/A_c$) | Raises the return to enclosing; crossing $\theta_H^\mu$ switches decisions from complements to substitutes, and the risk from over- to under-enclosure | $\theta_H = 1/\alpha$; $\theta = 1$ separates progressive from regressive enclosure | `th` |
+| $A$ | Baseline TFP | Enters only as $c/A$: shifts every locus down by the same vertical distance | — | *(absent — see below)* |
+| $\alpha$ | Labor share (Cobb–Douglas) | Lowers $\theta_H = 1/\alpha$, shrinking the race-prone complements region | — | `alp`, default `loci.ALP` |
+| $\bar l = \bar L/\bar T$ | Population density | Smooth $t_e \uparrow$ if $\theta > \theta_H$; a jump at $\bar l_{gg}^d$ if $\theta < \theta_H$ | Loci $\bar l_0^1, \bar l_1^1, \bar l_0^d, \bar l_1^d, \bar l_{gg}^d, \bar l^s, \dots$ | `lbar`; loci return $\ln\bar l$ |
+| $c$ | Enclosure cost per unit land | Shifts every locus up by the same vertical distance — geometrically identical to the economy's point moving down | Enters all loci as $c/A$, each scaling as $(c/A)^{1/\alpha}$ | `c`, default `loci.C` |
+| $t_e,\ l_e$ | Shares of land, labor in the enclosed sector | — | — | `te`, `model.le` |
+| $\mu \in [0,1]$ | Community capacity to regulate commons access | Shrinks labor misallocation and moves $\theta_H^\mu$ left toward 1; under-enclosure shrinks, but over-enclosure expands if $\tau = 0$ | $\mu=1$: no misallocation; $\theta_H^\mu = \frac{1}{\alpha} - \mu\frac{1-\alpha}{\alpha}$ | `mu` |
+| $\tau \in [0,1]$ | Compensation/resistance power of customary users | Raises the density needed before enclosure pays; over-enclosure shrinks, under-enclosure expands | $\tau=1$: "trade"; $\tau=0$: "raid" | `tau` |
+
+:::{note} One fixed canvas
+Every locus has the form
+
+$$\ln \bar l = \frac{1}{\alpha}\ln(c/A) + g(\theta)$$
+
+so $\bar l$, $c$ and $A$ never change the shape of the picture — they are the same vertical
+movement on one fixed canvas, and only $\mu$ and $\tau$ (through $g$) move the loci
+themselves. This is checked rather than asserted: scaling $c/A$ by $k$ shifts
+`ln_l01`, `ln_l11`, `ln_ld0`, `ln_ld1`, `ln_gg` and `ln_lm0` by
+$\tfrac{1}{\alpha}\ln k$ apiece, agreeing across $\theta$ to $10^{-15}$.
+
+It is also why the package carries no separate `A`: since $c$ and $A$ appear only as the
+ratio, `loci.C` **is** the paper's $c/A$. Output and welfare *levels* are consequently in
+units of $A$; thresholds and ratios are unaffected.
+:::
+
+**Also used in this appendix**, beyond the paper's table:
+
+| Symbol | Meaning | In code |
+|---|---|---|
+| $\Lambda_\mu = \left(\alpha\theta/A_\mu\right)^{1/(1-\alpha)}$ | Enclosed-to-commons labor intensity; $\Lambda_o = \theta^{1/(1-\alpha)}$ is the planner's | `model.Lambda(th, alp, mu)`, `loci.lam_mu` |
+| $A_\mu = 1-\mu(1-\alpha)$ | Share of the commons average product labor retains, eq. (37) | `manufacturing.commons_wedge` |
+| $\theta_H^\mu$ | Where $\Lambda_\mu = 1$: enclosure switches labor-extensive to labor-intensive | `model.theta_H(alp, mu)` |
+| $\theta_\tau = \tau^{1-\alpha}(A_\mu/\alpha)^{\alpha}$ | Below it enclosure earns less than the compensation owed, at any density — eq. (27b) | `loci.theta_tau(alp, mu, tau)` |
+| $\bar T,\ \bar L,\ \bar K$ | Total land, labor, capital endowments; $\bar t = \bar T/\bar L$, $\bar k = \bar K/\bar L$ | `tbar`, `lbar`, `kb` |
+| $l_c,\ l_m$ | Labor shares in the commons and in manufacturing (§6.4) | `manufacturing.labor_share` |
+| $\beta \in (0,1)$, $p > 0$ | Manufacturing labor share and relative price (§6.4) | `b`, `p` |
 
 :::{note} On $\Lambda$, and its correspondence with the paper's notation
 This appendix carries the composite

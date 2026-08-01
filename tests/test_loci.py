@@ -307,3 +307,45 @@ def test_theta_tau_boundary_is_density_free(mu, tau):
         ratios.append(r_e / comp)
     assert np.allclose(ratios, ratios[0], rtol=1e-12), "ratio must not depend on lbar"
     assert ratios[0] == pytest.approx(th * lam**loci.ALP / tau, rel=1e-12)
+
+
+# ---------------------------------------------------------------------------
+# "One fixed canvas" -- the symbol table's note in content/04-derivations.md
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("k", [2.0, 0.25, 7.5])
+def test_scaling_c_over_A_translates_every_locus_equally(k):
+    r"""Every locus has the form ln(lbar) = (1/alpha)ln(c/A) + g(theta), so c and A cannot
+    change the shape of the picture -- they move every curve by the same vertical distance,
+    which is geometrically identical to the economy's own point moving the other way. The
+    appendix's Notation section states this; this is what makes it a checked claim.
+
+    The corollary is why the package carries no separate `A`: c and A appear only as the
+    ratio, so `loci.C` is c/A."""
+    th = np.linspace(1.05, 2.2, 40)
+    predicted = np.log(k) / loci.ALP
+    curves = {
+        "ln_l01": lambda c: loci.ln_l01(th, loci.ALP, c),
+        "ln_l11": lambda c: loci.ln_l11(th, loci.ALP, c),
+        "ln_ld0": lambda c: loci.ln_ld0(th, loci.ALP, c, tau=0.3, mu=0.4),
+        "ln_ld1": lambda c: loci.ln_ld1(th, loci.ALP, c, tau=0.3, mu=0.4),
+        "ln_gg": lambda c: loci.ln_gg(th, loci.ALP, c, tau=0.3, mu=0.4),
+        "ln_lm0": lambda c: loci.ln_lm0(th, loci.ALP, c),
+    }
+    for name, f in curves.items():
+        d = f(loci.C * k) - f(loci.C)
+        d = d[np.isfinite(d)]
+        assert d.size, f"{name} produced no finite points to compare"
+        assert np.allclose(d, predicted, rtol=0, atol=1e-11), (
+            f"{name} did not translate by (1/alpha)ln({k}): "
+            f"got {d.min():.6f}..{d.max():.6f}, expected {predicted:.6f}"
+        )
+
+
+def test_tau_deforms_rather_than_translates():
+    """The converse half of the same claim: tau is not a vertical shift. Without this, a
+    locus that ignored tau entirely would pass the test above and look like a fixed canvas."""
+    th = np.linspace(1.05, 2.2, 40)
+    d = (loci.ln_ld0(th, tau=0.5, mu=0.0) - loci.ln_ld0(th, tau=0.0, mu=0.0))
+    d = d[np.isfinite(d)]
+    assert d.max() - d.min() > 0.5, "tau should change the shape, not just the level"
