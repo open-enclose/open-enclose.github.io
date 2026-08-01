@@ -98,7 +98,7 @@ print("installed from", WHEEL_URL)
 import numpy as np
 import matplotlib.pyplot as plt
 
-from enclose import figures, loci, model
+from enclose import figures, loci, model, welfare
 
 print("enclose", __import__("enclose").__version__, "loaded in the browser")
 ```
@@ -159,6 +159,121 @@ The four corners, side by side, are the paper's Figure 6:
 :tags: [hide-input]
 fig, ax = figures.combined_4x4()
 ```
+
+## How much output is actually lost
+
+:::{warning} Exploratory, and not reviewed by both authors
+Everything above this heading is the published paper. This section is not: it is work in
+progress, computed and tested but not yet reviewed by both co-authors. Treat the *shapes* as
+findings and the numbers as provisional.
+:::
+
+The loci say *where* private and social enclosure decisions diverge. They do not say by how
+much. `enclose.welfare` answers that by comparing three economies at every point of the same
+$(\theta, \ln\bar l)$ plane — each a pair of a labor rule and an enclosure rate:
+
+| regime | labor allocated by | enclosure rate $t_e$ |
+|:---|:---|:---|
+| **First-best** $W^{FB}$ | $\Lambda_o$ — marginal products equated | maximizes $z$ |
+| **Second-best** $W^{SB}$ | $\Lambda_\mu$ — the *decentralized* rule, taken as given | maximizes $z_0^\mu$ |
+| **Private** $W^{P}$ | $\Lambda_\mu$ | $t_e^d$ where $r(t_e)=c$, global-games selected |
+
+The second-best planner is what makes the exercise work: it **inherits the labor distortion
+it cannot fix** but chooses enclosure freely. That separates the two failures, so net output
+$W^k = Y^k - c\,t_e^k$ splits exactly:
+
+$$\underbrace{W^{FB} - W^{P}}_{\text{total foregone}}
+  = \underbrace{W^{FB} - W^{SB}}_{\text{labor misallocation}}
+  + \underbrace{W^{SB} - W^{P}}_{\text{enclosure error}}$$
+
+Both terms are non-negative by construction, not by luck, and `build_grid` asserts the
+orderings and the identity at every grid point rather than taking them on trust.
+
+```{code-cell} python
+:tags: [hide-input]
+from ipywidgets import Dropdown
+
+def losses(mu=0.0, tau=0.0, component="total", normalize="ratio"):
+    figures.loss_panel(mu=mu, tau=tau, component=component, normalize=normalize, n=61)
+    plt.show()
+
+# continuous_update=False: each redraw is a full grid solve, so recompute on release rather
+# than on every pixel of the drag.
+interact(
+    losses,
+    mu=FloatSlider(value=0.0, min=0.0, max=1.0, step=0.05, continuous_update=False,
+                   description=r"$\mu$ (governance)", style={"description_width": "initial"}),
+    tau=FloatSlider(value=0.0, min=0.0, max=1.0, step=0.05, continuous_update=False,
+                    description=r"$\tau$ (compensation)", style={"description_width": "initial"}),
+    component=Dropdown(options=list(welfare.COMP_LABEL), value="total",
+                       description="component", style={"description_width": "initial"}),
+    normalize=Dropdown(options=list(welfare.NORM_LABEL), value="ratio",
+                       description="normalize", style={"description_width": "initial"}),
+);
+```
+
+Three things are worth looking for.
+
+**The losses live in a band, and its edges are curves the paper already draws.** Everything
+outside is flat zero. At low density nobody encloses; at high density everybody does; both
+are right. Inefficiency is a *transitional* phenomenon, confined to where the decision is
+genuinely close — which is why the overlaid loci are not decoration. The paper's diagrams
+turn out to be the boundaries of this surface rather than separate objects.
+
+**The enclosure error dominates the misallocation.** Switch `component` between the two. The
+open-access labor distortion — the classic tragedy-of-the-commons story — tops out near 5% of
+first-best. Getting the *enclosure decision* wrong costs several times that. The misallocation
+wedge also vanishes at both corners by construction, since with all land in one state there is
+nothing to misallocate between, so it is intrinsically an interior, second-order effect.
+
+**Below $\theta = 1$, enclosure has no productivity rationale and happens anyway.** Both
+planners enclose nothing there. Private agents enclose fully once density passes a threshold,
+because enclosure captures rents that open access was dissipating — with a misallocation
+component of exactly zero. Redistribution dressed as improvement, triggered by *density*, not
+by any change in technology.
+
+:::{note} Why the three normalizations disagree
+They are not rescalings of one another. Output per unit land scales as $\bar l^{\alpha}$, so
+output per worker scales as $\bar l^{\alpha-1}$ and *falls* in density. Switching to
+`per_worker` therefore upweights sparse economies hard enough to move the worst-affected
+economy to the opposite corner of the plane — from poor-and-crowded to
+productive-and-land-abundant. The `ratio` is the default because it is the only one invariant
+to the choice.
+:::
+
+### Does either reform work alone?
+
+The Key Result is stated in locus terms — at $\mu=\tau=1$ the decentralized loci become
+*identical* to the planner's. In output terms it becomes quantitative, and stronger:
+
+```{code-cell} python
+:tags: [hide-input]
+grid = [0.0, 0.25, 0.5, 0.75, 1.0]
+
+print("mean total loss, % of first-best")
+print("        " + "".join(f"  tau={t:<5.2f}" for t in grid))
+for mu in grid:
+    row = ""
+    for tau in grid:
+        _, _, S = welfare.build_grid(n_th=31, n_l=31, mu=mu, tau=tau)
+        # Clamped: non-negative by theorem, but at mu=tau=1 the two objectives coincide
+        # exactly and the mean lands a few times 1e-16 below zero. Printing "-0.00" there
+        # would read as a bug rather than as the exact-zero result it is.
+        row += f"{max(0.0, 100 * S['total'].mean()):9.2f}"
+    print(f"  mu={mu:4.2f}" + row)
+```
+
+The diagonal falls monotonically to zero: joint reform works, and works smoothly. But **both
+axes are U-shaped, and both end worse than doing nothing** — unilateral reform is not merely
+insufficient, it is counterproductive at the limit. Raising $\mu$ alone fixes the smaller
+wedge while widening the gap between private and social enclosure incentives, because a
+well-run commons has value that enclosers still do not pay for. Raising $\tau$ alone converts
+over-enclosure into under-enclosure; set `component` to `over_enclosure` and then
+`under_enclosure` and sweep $\tau$ to watch the trade.
+
+Read the means as shape, not level: they are unweighted averages over an arbitrary rectangle
+of $(\theta, \ln\bar l)$, not a welfare criterion, and the minimizing $\tau$ moves with the
+window.
 
 ## Going further
 

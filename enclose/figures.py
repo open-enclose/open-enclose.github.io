@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon as MplPolygon
 
-from . import loci, model
+from . import loci, model, welfare
 from .style import (
     COLOR_DECENTRALIZED,
     COLOR_MONOPOLY,
@@ -956,3 +956,71 @@ def structural_transformation(alp=0.5, mu=0.0, b=0.5, tbar=1.0, kb=1.0, p=1.0):
                 style="italic", color="darkred")
     fig.tight_layout()
     return fig, ax
+
+
+# ---------------------------------------------------------------------------
+# Foregone-output heatmap (enclose.welfare)
+# ---------------------------------------------------------------------------
+
+def loss_panel(mu=0.0, tau=0.0, component="total", normalize="ratio", n=61, ax=None,
+               vmax=None, th_lo=0.90, th_hi=2.30, lnl_lo=-1.0, lnl_hi=4.0):
+    r"""Foregone output over the $(\theta, \ln\bar l)$ plane. Returns (fig, ax, surfaces).
+
+    Sized for a slider. `n=61` is about 0.2 s natively and around a second under Pyodide;
+    `n=161` is ~1.3 s and better suited to a figure for print than to a control someone is
+    dragging.
+
+    `component` and `normalize` are the keys of `welfare.COMP_LABEL` and
+    `welfare.NORM_LABEL` — see `welfare.loss_surface`, and note that the three
+    normalizations are not rescalings of one another. `vmax` defaults to the fixed ceiling in
+    `welfare.VMAX` for that pair; pass a number to override, or `np.inf` to autoscale and
+    lose comparability across slider settings.
+
+    The overlaid loci are not decoration. The losses are confined to a band, and the band's
+    edges are curves the paper already draws — the planner loci bound it and the private loci
+    run along its ridge, so the diagrams in the paper turn out to be the boundaries of this
+    surface rather than separate objects.
+
+    Only the *private* regime responds to $\tau$; first- and second-best are
+    transfers-invariant. So under a $\tau$ slider the black planner loci and the
+    (planner-side) misallocation component stand still by construction, and everything that
+    moves is the enclosure-error wedge — whose composition swings from over-enclosure at low
+    $\tau$ to under-enclosure at high $\tau$. Switch between the `over_enclosure` and
+    `under_enclosure` components to watch the trade.
+    """
+    th, lnl, S = welfare.build_grid(n_th=n, n_l=n, th_lo=th_lo, th_hi=th_hi,
+                                    lnl_lo=lnl_lo, lnl_hi=lnl_hi, mu=mu, tau=tau)
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(9, 6.5))
+    else:
+        fig = ax.figure
+
+    M = welfare.loss_surface(S, lnl, component, normalize)
+    if vmax is None:
+        vmax = welfare.VMAX[(normalize, component)]
+    elif np.isinf(vmax):
+        vmax = None
+
+    pcm = ax.pcolormesh(th, lnl, M, shading="auto", cmap="magma_r", vmin=0, vmax=vmax)
+    cb = fig.colorbar(pcm, ax=ax)
+    cb.set_label(f"{welfare.COMP_LABEL[component]}, {welfare.NORM_LABEL[normalize]}",
+                 fontsize=11)
+
+    with np.errstate(invalid="ignore"):
+        ax.plot(th, loci.ln_l01(th), color="black", lw=2)
+        ax.plot(th, loci.ln_l11(th), color="black", lw=2)
+        ax.plot(th, loci.ln_ld0(th, tau=tau, mu=mu), color="deepskyblue", lw=2)
+        ax.plot(th, loci.ln_ld1(th, tau=tau, mu=mu), color="deepskyblue", lw=2)
+
+    ax.axvline(1.0, color="white", ls=":", lw=1.2)
+    ax.axvline(model.theta_H(ALP, mu), color="white", ls=":", lw=1.2)
+    ax.set_xlim(th.min(), th.max())
+    ax.set_ylim(lnl.min(), lnl.max())
+    ax.set_xlabel(r"$\theta$ (rel. TFP)", fontsize=12)
+    ax.set_ylabel(r"$\ln(\bar l)$ (log population density)", fontsize=12)
+    unit = "%" if normalize == "ratio" else ""
+    ax.set_title(
+        rf"$\mu={mu:.2f}$, $\tau={tau:.2f}$  ·  {welfare.COMP_LABEL[component]}, "
+        f"{welfare.NORM_LABEL[normalize]}"
+        f"\nmean {M.mean():.3g}{unit}   max {M.max():.3g}{unit}", fontsize=11)
+    return fig, ax, S
