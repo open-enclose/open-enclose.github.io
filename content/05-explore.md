@@ -148,17 +148,47 @@ instead.
   it is $1/\alpha - \mu(1-\alpha)/\alpha$, and it is also where the second-best objective
   switches from convex to concave.
 
-Push both sliders to 1 and the red band lands exactly on the black one. That coincidence is
+Push $\mu$ and $\tau$ to 1 and the red band lands exactly on the black one. That coincidence is
 the paper's Key Result (§5.3) — the wedge closes only when commons governance and
 compensation are *both* complete. Neither alone suffices, which you can check by pushing one
 slider to 1 while leaving the other at 0.
+
+:::{note} What $\alpha$ does, and why it is not like the other two
+$\mu$ and $\tau$ are *institutions*: they move the decentralized loci across a fixed canvas.
+$\alpha$ is **technology**, and it rescales the canvas itself — which is why the axes move
+when you drag it and not when you drag the others.
+
+Its main role is that it sets the upper threshold outright:
+
+$$\theta_H = \frac{1}{\alpha}, \qquad \theta_H^\mu = \frac{1}{\alpha} - \mu\frac{1-\alpha}{\alpha}$$
+
+Raising $\alpha$ pulls $\theta_H$ down toward 1 and **shrinks the strategic-complements
+region** — the band below $\theta_H$ where enclosure decisions reinforce one another,
+equilibrium is multiple, and the outcome is selected rather than determined. A labor-intensive
+technology ($\alpha \to 1$) leaves almost no room for that: nearly every economy sits above
+$\theta_H$, where the private enclosure rate is unique and moves smoothly. A land-intensive
+one ($\alpha$ small) makes the coordination region wide, and races the dominant failure.
+
+Two further consequences are worth watching for as you drag it:
+
+- **Steepness.** Every locus scales as $(c/A)^{1/\alpha}$, so $\alpha$ sets how sharply the
+  thresholds respond to density. Low $\alpha$ stretches the picture vertically: small changes
+  in $\bar l$ swing the enclosure decision much further.
+- **The size of the labor wedge.** The gap between private and planner labor intensity is
+  $\Lambda_o/\Lambda_\mu = (A_\mu/\alpha)^{1/(1-\alpha)}$, which at $\mu=0$ is
+  $\alpha^{-1/(1-\alpha)}$ — the open-access distortion is *worse* the more land-intensive
+  production is, because that is when the possession rent commoners capture is largest.
+
+At $\alpha=1$ land would earn nothing and the model has nothing to be about; the slider stops
+at 0.9.
+:::
 
 ```{code-cell} python
 :tags: [hide-input]
 from ipywidgets import interact, FloatSlider
 
-def wedge(mu=0.0, tau=0.0):
-    fig, ax = figures.wedge_panel(mu=mu, tau=tau)
+def wedge(mu=0.0, tau=0.0, alp=2/3):
+    fig, ax = figures.wedge_panel(mu=mu, tau=tau, alp=alp)
     plt.show()
 
 interact(
@@ -167,6 +197,11 @@ interact(
                    description=r"$\mu$ (governance)", style={"description_width": "initial"}),
     tau=FloatSlider(value=0.0, min=0.0, max=1.0, step=0.05,
                     description=r"$\tau$ (compensation)", style={"description_width": "initial"}),
+    # alpha rescales the axes, so unlike mu and tau it moves the canvas as well as the
+    # curves -- see `figures._wedge_window`.
+    alp=FloatSlider(value=2/3, min=0.45, max=0.9, step=0.01,
+                    description=r"$\alpha$ (labor share)", readout_format=".2f",
+                    style={"description_width": "initial"}),
 );
 ```
 

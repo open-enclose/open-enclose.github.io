@@ -463,7 +463,41 @@ _WEDGE_XLIM = (0.8, 2.15)
 _WEDGE_YLIM = (-1.6, 4.0)
 
 
-def wedge_panel(mu=0.0, tau=0.0, ax=None, second_best=True, figsize=(7.5, 6)):
+def _wedge_window(alp):
+    r"""Axis limits for `wedge_panel` at labor share `alp`.
+
+    Deliberately a function of $\alpha$ **only**. The whole point of the $\mu$/$\tau$ sliders
+    is that the canvas holds still while the red band moves across it, so the window must not
+    respond to them; but $\alpha$ genuinely rescales the picture and cannot be ignored.
+    $\theta_H = 1/\alpha$ leaves the fixed 2.15 right edge below $\alpha \approx 0.47$, and at
+    $\alpha=0.85$ the fixed $(-1.6, 4.0)$ vertical window clips 19% of the plotted points.
+
+    The extent is measured off the planner band, which depends on neither $\mu$ nor $\tau$,
+    and is then mapped so that the window stands in the same relation to it as the hand-set
+    `_WEDGE_YLIM` stands to the band at the paper's $\alpha$. So $\alpha=2/3$ reproduces the
+    original framing *exactly* rather than approximately -- the calibrated view is the
+    reference, and other $\alpha$ inherit its proportions instead of overriding them.
+    """
+    def extent(a, hi):
+        th = np.arange(1.15, hi, 0.005)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            band = np.concatenate([loci.ln_l01(th, a), loci.ln_l11(th, a),
+                                   loci.ln_ld0(np.arange(_WEDGE_XLIM[0], hi, 0.005), a)])
+        band = band[np.isfinite(band)]
+        return band.min(), band.max()
+
+    th_H0 = model.theta_H(alp, 0.0)                 # mu=0 gives the largest theta_H
+    xhi = max(_WEDGE_XLIM[1], th_H0 * 1.12)
+
+    lo_a, hi_a = extent(alp, xhi)
+    lo_r, hi_r = extent(ALP, _WEDGE_XLIM[1])        # the calibrated reference
+    scale = (hi_a - lo_a) / (hi_r - lo_r)
+    pad_lo = (lo_r - _WEDGE_YLIM[0]) * scale
+    pad_hi = (_WEDGE_YLIM[1] - hi_r) * scale
+    return (_WEDGE_XLIM[0], xhi), (lo_a - pad_lo, hi_a + pad_hi)
+
+
+def wedge_panel(mu=0.0, tau=0.0, alp=ALP, ax=None, second_best=True, figsize=(7.5, 6)):
     r"""One panel of `combined_4x4`, for *any* $(\mu, \tau)$ rather than the four corners.
 
     `combined_4x4` hard-codes $(\mu,\tau) \in \{0,1\}^2$ across four axes. This draws the
@@ -473,12 +507,16 @@ def wedge_panel(mu=0.0, tau=0.0, ax=None, second_best=True, figsize=(7.5, 6)):
     $\mu=\tau=1$ the two coincide exactly -- the paper's Key Result (§5.3, "the wedge
     closes"), here reached continuously instead of in one jump between panels.
 
-    **The global-games locus is drawn only where it exists.** `ln_gg` is $\tau$-extended but
-    $\mu=0$ only; `ln_gg_mu` is $\mu$-extended but $\tau=0$ only. A combined $(\mu,\tau)$
-    risk-dominance threshold is derived nowhere in the appendix or this codebase, so when
-    both are non-zero this panel omits the dashed selection curve and says so on the axis
-    rather than interpolating something underived. Do not "fix" that by drawing either
-    one-sided locus in the interior; they are not the same object.
+    **The global-games locus is drawn on its real domain**, $\theta_\tau < \theta <
+    \theta_H^\mu$, from the joint $(\mu,\tau)$ form of appendix eq. (27a). It is no longer
+    confined to the two edges, and is omitted only when that interval is genuinely empty
+    ($\theta_\tau \geq \theta_H^\mu$, which happens at $\mu=\tau=1$).
+
+    **$\alpha$ rescales the whole picture, so the window moves with it.** $\theta_H = 1/\alpha$
+    runs off a fixed right edge below $\alpha \approx 0.47$, and a fixed vertical window clips
+    19% of the plotted points at $\alpha=0.85$. `_wedge_window` therefore sets the limits from
+    $\alpha$ alone, so the $\mu$ and $\tau$ sliders still move the band across a stationary
+    canvas while $\alpha$ is what rescales it.
 
     **The blue second-best loci move with $\mu$ and not with $\tau$.** The constrained
     planner respects the decentralized labor allocation, which governance shifts; but
@@ -495,21 +533,22 @@ def wedge_panel(mu=0.0, tau=0.0, ax=None, second_best=True, figsize=(7.5, 6)):
     else:
         fig = ax.figure
 
-    th_H = model.theta_H(ALP, mu)          # theta_H^mu, eq. (24)
+    th_H = model.theta_H(alp, mu)          # theta_H^mu, eq. (24)
 
-    the_1 = np.arange(1.1, 2.1, 0.005)     # planner band domain, as in combined_4x4
-    the_d = np.arange(0.8, 2.1, 0.005)     # decentralized loci extend below theta=1
+    (xlo, xhi), ylim = _wedge_window(alp)
+    the_1 = np.arange(1.1, xhi, 0.005)     # planner band domain, as in combined_4x4
+    the_d = np.arange(xlo, xhi, 0.005)     # decentralized loci extend below theta=1
 
     # ---- planner band (black): independent of mu and tau, the fixed reference ----
-    l01, l11 = loci.ln_l01(the_1), loci.ln_l11(the_1)
+    l01, l11 = loci.ln_l01(the_1, alp), loci.ln_l11(the_1, alp)
     ax.plot(the_1, l01, color=COLOR_PLANNER_BLACK)
     ax.plot(the_1, l11, color=COLOR_PLANNER_BLACK)
     fill_between_sorted(ax, the_1, l01, l11, np.ones_like(the_1, bool),
                         alpha=REGION_ALPHA, color="C0")
 
     # ---- decentralized band (red): the part that moves ----
-    l0d = loci.ln_ld0(the_d, tau=tau, mu=mu)
-    l1d = loci.ln_ld1(the_d, tau=tau, mu=mu)
+    l0d = loci.ln_ld0(the_d, alp, tau=tau, mu=mu)
+    l1d = loci.ln_ld1(the_d, alp, tau=tau, mu=mu)
     ax.plot(the_d, l0d, color=COLOR_DECENTRALIZED)
     ax.plot(the_d, l1d, color=COLOR_DECENTRALIZED)
     # The two loci swap order at theta_H^mu, so the fill is split there -- otherwise
@@ -527,10 +566,10 @@ def wedge_panel(mu=0.0, tau=0.0, ax=None, second_best=True, figsize=(7.5, 6)):
     # There, enclosure earns less than the compensation it owes, at any density -- both
     # rents scale with lbar^alpha, so density cancels out of the sign.
     # `ln_gg` returns +inf outside the interval, which matplotlib skips.
-    th_tau = loci.theta_tau(ALP, mu, tau)
+    th_tau = loci.theta_tau(alp, mu, tau)
     if th_tau < th_H:
-        the_gg = np.arange(max(0.8, th_tau), th_H, 0.002)
-        ax.plot(the_gg, loci.ln_gg(the_gg, tau=tau, mu=mu), color=COLOR_DECENTRALIZED,
+        the_gg = np.arange(max(xlo, th_tau), th_H, 0.002)
+        ax.plot(the_gg, loci.ln_gg(the_gg, alp, tau=tau, mu=mu), color=COLOR_DECENTRALIZED,
                 linestyle=LINESTYLE_SELECTION, linewidth=2)
         # Mark the left edge only when compensation is what creates it, i.e. when it sits
         # inside the plotted range rather than at theta_tau = 0.
@@ -541,7 +580,7 @@ def wedge_panel(mu=0.0, tau=0.0, ax=None, second_best=True, figsize=(7.5, 6)):
         # accurate replacement -- enclosure earning less than the compensation it owes --
         # reads as a claim about welfare rather than about profitability. The asymptote is
         # legible without a label; the explanation belongs in the prose, not the axes.
-        if tau > 0 and th_tau > _WEDGE_XLIM[0]:
+        if tau > 0 and th_tau > xlo:
             ax.axvline(th_tau, color=COLOR_DECENTRALIZED, linestyle=":", linewidth=1,
                        alpha=0.7)
         gg_note = None
@@ -563,9 +602,9 @@ def wedge_panel(mu=0.0, tau=0.0, ax=None, second_best=True, figsize=(7.5, 6)):
         # The eq.(19)/(20) arguments go negative on the wrong side of theta_H^mu; masked
         # immediately after, so the NaNs there are expected rather than a bug.
         with np.errstate(invalid="ignore"):
-            ls = np.where(the_1 < th_H, loci.ln_ls(the_1), np.nan)
-            ls0 = np.where(the_1 > th_H, loci.ln_ls0_mu(the_1, mu=mu), np.nan)
-            ls1 = np.where(the_1 > th_H, loci.ln_ls1_mu(the_1, mu=mu), np.nan)
+            ls = np.where(the_1 < th_H, loci.ln_ls(the_1, alp), np.nan)
+            ls0 = np.where(the_1 > th_H, loci.ln_ls0_mu(the_1, alp, mu=mu), np.nan)
+            ls1 = np.where(the_1 > th_H, loci.ln_ls1_mu(the_1, alp, mu=mu), np.nan)
         for curve in (ls, ls0, ls1):
             ax.plot(the_1, curve, linestyle=LINESTYLE_SELECTION,
                     color=COLOR_PLANNER_BLUE, linewidth=2)
@@ -573,17 +612,25 @@ def wedge_panel(mu=0.0, tau=0.0, ax=None, second_best=True, figsize=(7.5, 6)):
     ax.axvline(1, ymax=0.95, linestyle=LINESTYLE_THRESHOLD, color="black")
     ax.axvline(th_H, ymax=0.95, linestyle=LINESTYLE_THRESHOLD, color="black")
 
-    ax.set_xlim(*_WEDGE_XLIM)
-    ax.set_ylim(*_WEDGE_YLIM)
+    ax.set_xlim(xlo, xhi)
+    ax.set_ylim(*ylim)
     # theta_H^mu is no longer repeated here -- the x-axis tick below carries its value.
-    ax.set_title(rf"$\mu={mu:.2f}$,  $\tau={tau:.2f}$", fontsize=15)
+    ax.set_title(rf"$\mu={mu:.2f}$,  $\tau={tau:.2f}$,  $\alpha={alp:.2f}$", fontsize=15)
     common_labels(ax, fontsize=12)
     style_axes(ax)
     # After style_axes, which clears all ticks. Naming the two verticals on the axis is the
     # cheapest way to say what they are; theta_H^mu carries its value because it moves with
     # the mu slider, while theta=1 never does.
-    ax.set_xticks([1.0, th_H])
-    ax.set_xticklabels([r"$\theta=1$", rf"$\theta_H^\mu={th_H:.2f}$"], fontsize=11)
+    # High alpha (or high mu) pushes theta_H^mu down toward 1, and the two labels overlap
+    # into unreadable overprinted text -- visible at alpha=0.85, where theta_H^mu = 1.12.
+    # Past that point only theta_H^mu is labelled: it carries its value, so it says where
+    # both lines are, and the theta=1 vertical is still drawn.
+    if (th_H - 1.0) < 0.10 * (xhi - xlo):
+        ax.set_xticks([th_H])
+        ax.set_xticklabels([rf"$\theta_H^\mu={th_H:.2f}$"], fontsize=11)
+    else:
+        ax.set_xticks([1.0, th_H])
+        ax.set_xticklabels([r"$\theta=1$", rf"$\theta_H^\mu={th_H:.2f}$"], fontsize=11)
     ax.tick_params(axis="x", length=4, pad=2)
 
     if gg_note is not None:

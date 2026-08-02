@@ -259,3 +259,57 @@ def test_planner_allocation_is_unmoved_by_enclosure_when_theta_is_one():
     decentralized = dict(kw, mu=0.0)
     assert mfg.labor_share(te=0.0, **decentralized) < planner
     assert mfg.labor_share(te=1.0, **decentralized) == pytest.approx(planner)
+
+
+# ---------------------------------------------------------------------------
+# alpha slider on wedge_panel
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("alp", [0.45, 0.5, 0.75, 0.85, 0.9])
+def test_wedge_panel_window_contains_theta_H_at_every_alpha(alp):
+    """theta_H = 1/alpha runs off a fixed right edge below alpha ~ 0.47, and a fixed vertical
+    window clips badly at high alpha. `_wedge_window` follows alpha to keep the threshold --
+    the panel's whole subject -- inside the frame."""
+    fig, ax = figures.wedge_panel(mu=0.3, tau=0.2, alp=alp)
+    lo, hi = ax.get_xlim()
+    assert lo <= model.theta_H(alp, 0.3) <= hi
+    plt.close(fig)
+
+
+def test_paper_alpha_reproduces_the_calibrated_window_exactly():
+    """alpha=2/3 must give back the hand-set framing bit for bit. `_wedge_window` scales the
+    *other* alphas off this reference rather than recomputing it, so a regression here means
+    the reference itself moved -- which would silently reframe every existing screenshot."""
+    fig, ax = figures.wedge_panel(alp=figures.ALP)
+    assert ax.get_xlim() == pytest.approx(figures._WEDGE_XLIM)
+    assert ax.get_ylim() == pytest.approx(figures._WEDGE_YLIM)
+    plt.close(fig)
+
+
+def test_wedge_panel_curves_actually_move_with_alpha():
+    """Guards against alpha being accepted and then ignored -- the failure mode that let
+    `tepvt_g` silently discard mu. The window moves with alpha too, so comparing limits alone
+    would pass even if every locus were still drawn at the default."""
+    ys = {}
+    for alp in (0.5, 2 / 3, 0.85):
+        fig, ax = figures.wedge_panel(mu=0.3, tau=0.0, alp=alp)
+        # first plotted curve is the first-best no-enclosure locus
+        ys[alp] = np.asarray(ax.get_lines()[0].get_ydata(), dtype=float)
+        plt.close(fig)
+    for a, b in [(0.5, 2 / 3), (2 / 3, 0.85)]:
+        n = min(ys[a].size, ys[b].size)
+        assert not np.allclose(ys[a][:n], ys[b][:n], equal_nan=True), \
+            f"loci identical at alpha={a} and {b}: alpha is being ignored"
+
+
+def test_theta_labels_do_not_overprint_when_theta_H_approaches_one():
+    """At high alpha or high mu, theta_H^mu falls toward 1 and the two x labels would print
+    on top of each other. Past a threshold only theta_H^mu is labelled -- it carries its
+    value, so it locates both lines."""
+    fig, ax = figures.wedge_panel(mu=0.9, tau=0.0, alp=0.9)
+    assert len(ax.get_xticks()) == 1, "labels should collapse to one when theta_H nears 1"
+    plt.close(fig)
+
+    fig, ax = figures.wedge_panel(mu=0.0, tau=0.0, alp=0.5)
+    assert len(ax.get_xticks()) == 2, "well-separated thresholds should both be labelled"
+    plt.close(fig)

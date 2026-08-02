@@ -349,3 +349,40 @@ def test_tau_deforms_rather_than_translates():
     d = (loci.ln_ld0(th, tau=0.5, mu=0.0) - loci.ln_ld0(th, tau=0.0, mu=0.0))
     d = d[np.isfinite(d)]
     assert d.max() - d.min() > 0.5, "tau should change the shape, not just the level"
+
+
+# ---------------------------------------------------------------------------
+# alpha's role -- the claims the explore page makes beside its alpha slider
+# ---------------------------------------------------------------------------
+
+def test_raising_alpha_shrinks_the_complements_region():
+    """theta_H = 1/alpha, so a more labor-intensive technology leaves less room below it --
+    less room for multiple equilibria, races, and selection. The page says this beside the
+    slider; a reader can check it by dragging, and this checks it on every push."""
+    ths = [model.theta_H(a, 0.0) for a in (0.45, 0.5, 2 / 3, 0.85, 0.9)]
+    assert all(x > y for x, y in zip(ths, ths[1:])), "theta_H must fall as alpha rises"
+    assert model.theta_H(0.5, 0.0) == pytest.approx(2.0)
+
+
+@pytest.mark.parametrize("alp", [0.45, 0.5, 2 / 3, 0.85])
+@pytest.mark.parametrize("mu", [0.0, 0.4, 1.0])
+def test_labor_wedge_closed_form_and_its_alpha_direction(alp, mu):
+    r"""The private-vs-planner labor intensity gap is Lambda_o/Lambda_mu = (A_mu/alpha)^(1/(1-alpha)),
+    with no theta in it. At mu=0 that is alpha^(-1/(1-alpha)), which *falls* as alpha rises --
+    the open-access distortion is worse the more land-intensive production is, because the
+    possession rent commoners capture is larger."""
+    A_mu = 1 - mu * (1 - alp)
+    predicted = (A_mu / alp)**(1 / (1 - alp))
+    for th in (1.2, 1.8, 2.4):
+        lam_o = th**(1 / (1 - alp))
+        lam_mu = model.Lambda(th, alp, mu)
+        assert lam_o / lam_mu == pytest.approx(predicted, rel=1e-12), \
+            "the wedge must be theta-free"
+    if mu == 0.0:
+        assert predicted == pytest.approx(alp**(-1 / (1 - alp)), rel=1e-12)
+
+
+def test_open_access_labor_wedge_falls_as_alpha_rises():
+    gaps = [a**(-1 / (1 - a)) for a in (0.45, 0.5, 2 / 3, 0.85)]
+    assert all(x > y for x, y in zip(gaps, gaps[1:]))
+    assert gaps[2] == pytest.approx(3.375, rel=1e-9), "alpha=2/3 gives (2/3)^-3 = 3.375"
