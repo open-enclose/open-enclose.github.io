@@ -313,3 +313,31 @@ def test_theta_labels_do_not_overprint_when_theta_H_approaches_one():
     fig, ax = figures.wedge_panel(mu=0.0, tau=0.0, alp=0.5)
     assert len(ax.get_xticks()) == 2, "well-separated thresholds should both be labelled"
     plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# The figure map against the paper itself
+# ---------------------------------------------------------------------------
+
+def test_site_figure_map_matches_the_paper():
+    r"""The site claims a number, a \label and a section for each of the paper's figures.
+    Those claims were wrong until 2026-08-02: `trajectories.png` was listed among the paper's
+    figures with a section attribution though main.tex never includes it, and Figs. 3 and 4
+    were carried unnumbered.
+
+    Skips when the paper is absent, which is the normal case in CI -- main.tex lives in a
+    sibling repository that is not checked out. So this guards a local edit, not the build;
+    the mapping's real protection is that `scripts/check_figure_map.py` can be re-run whenever
+    the manuscript changes.
+    """
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    if not (root.parent / "enclosure_paper" / "main.tex").is_file():
+        pytest.skip("enclosure_paper/main.tex not available")
+
+    r = subprocess.run([sys.executable, str(root / "scripts" / "check_figure_map.py")],
+                       capture_output=True, text=True)
+    assert r.returncode == 0, f"figure map disagrees with main.tex:\n{r.stdout}\n{r.stderr}"

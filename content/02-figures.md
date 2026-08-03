@@ -33,41 +33,50 @@ the figures published here cannot drift from the code that generates them.
 
 Each returns a matplotlib `(fig, ax)`; nothing is written to disk unless you save it.
 
+All seven, in the order the paper prints them:
+
 ```python
 from enclose import figures
 
-fig, ax = figures.social_optimum(cond_opt=False)   # Fig. 1  social_optimum.png
-fig, ax = figures.social_optimum(cond_opt=True)    #         social_opt_cond.png
+fig, ax = figures.social_optimum(cond_opt=False)     # Fig. 1  social_optimum.png
 fig, ax = figures.nash_equilibrium(full_diag=False)  # Fig. 2  nash_eq.png
-fig, ax = figures.nash_equilibrium(full_diag=True)   #         nash_so_comp.png
-fig, ax = figures.comparison()                     # Fig. 5  comparison.png
-fig, ax = figures.combined_4x4()                   # Fig. 6  new_comp_fig4x4.png
-fig, ax = figures.monopoly()                       # Fig. 7  monopoly.png
-fig, ax = figures.trajectories()                   #         trajectories.png
+fig, ax = figures.nash_equilibrium(full_diag=True)   # Fig. 3  nash_so_comp.png
+fig, ax = figures.social_optimum(cond_opt=True)      # Fig. 4  social_opt_cond.png
+fig, ax = figures.comparison()                       # Fig. 5  comparison.png
+fig, ax = figures.combined_4x4()                     # Fig. 6  new_comp_fig4x4.png
+fig, ax = figures.monopoly()                         # Fig. 7  monopoly.png
 ```
 
-| Function | Output | Paper section |
-|:---|:---|:---|
-| `social_optimum(cond_opt=False)` | `social_optimum.png` | §3.2, Lemma 1 |
-| `social_optimum(cond_opt=True)` | `social_opt_cond.png` | §4.1 |
-| `nash_equilibrium(full_diag=False)` | `nash_eq.png` | §3.3, Props 2–3 |
-| `nash_equilibrium(full_diag=True)` | `nash_so_comp.png` | §4 |
-| `comparison()` | `comparison.png` | §4.1 |
-| `combined_4x4()` | `new_comp_fig4x4.png` | §5.4 |
-| `monopoly()` | `monopoly.png` | §6.3 |
-| `trajectories()` | `trajectories.png` | §6 |
+The `\label` is carried alongside the number because numbers renumber when a figure is
+added or moved, and labels do not — if the two ever disagree, trust the label.
+
+| Paper | `\label` | Function | Output | Paper section |
+|:---|:---|:---|:---|:---|
+| Fig. 1 | `fig-social` | `social_optimum(cond_opt=False)` | `social_optimum.png` | §3.2, Lemma 1 |
+| Fig. 2 | `figure_private` | `nash_equilibrium(full_diag=False)` | `nash_eq.png` | §3.3, Props 2–3 |
+| Fig. 3 | `fig_compare` | `nash_equilibrium(full_diag=True)` | `nash_so_comp.png` | §4 |
+| Fig. 4 | `fig-social-cond` | `social_optimum(cond_opt=True)` | `social_opt_cond.png` | §4.1 |
+| Fig. 5 | `figure5` | `comparison()` | `comparison.png` | §4.1 |
+| Fig. 6 | `figure4x4` | `combined_4x4()` | `new_comp_fig4x4.png` | §5.4 |
+| Fig. 7 | `figure7` | `monopoly()` | `monopoly.png` | §6.3 |
+
+Verified against `main.tex` by `scripts/check_figure_map.py`, which reads the figure
+environments in source order — which is what determines the printed number — and compares
+them with the table above.
 
 ## Explanatory figures
 
-Four more are used on this site but are not in the paper. Two fill placeholders the
+Five more are used on this site but appear **nowhere in the paper**. Two fill placeholders the
 [Mathematical Appendix](04-derivations.md) numbers but never had generators for; two support
-the [manufacturing extension](03-manufacturing.md).
+the [manufacturing extension](03-manufacturing.md); and `trajectories` was drawn for this site
+to separate movements *of* the economy from movements *of* the loci.
 
 ```python
 fig, ax = figures.labor_reaction(te=0.5, th=1.6, alp=0.5, mu=0.5)
 fig, ax = figures.labor_misallocation(te=0.5, alp=0.5, th=1.5, mu=0.0)
 fig, ax = figures.manufacturing_equilibrium(te_values=(0.0, 1.0), th=1.0, alp=0.4, b=0.7)
 fig, ax = figures.structural_transformation(alp=0.5, mu=0.0, b=0.5)
+fig, ax = figures.trajectories()
 ```
 
 ## Changing the parameters
