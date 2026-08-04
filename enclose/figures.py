@@ -3,9 +3,11 @@ r"""One function per paper figure. Each returns (fig, ax) — nothing is saved h
 
 Sources (see `REORGANIZATION_PROPOSAL.md` for the fragmentation this consolidates):
 `social_optimum`/`nash_equilibrium`/`monopoly`/`comparison` port `Model_Construction.ipynb`
-cells 26/36/45/47; `combined_4x4` ports cell 91; `trajectories` ports
-`generate_trajectories_figure.py`, already well-designed and only lightly adapted here to
-call `enclose.loci` instead of its own inline copies of the same formulas.
+cells 26/36/45/47; `combined_4x4` ports cell 91.
+
+`trajectories` was removed on 2026-08-03: it was drawn for a revision plan that was
+subsequently retired (see final_revisions.md B1, "the retired trajectories plan"), and
+it appears in no version of the paper. `enclose.loci` keeps the formulas it used.
 """
 
 import numpy as np
@@ -641,156 +643,6 @@ def wedge_panel(mu=0.0, tau=0.0, alp=ALP, ax=None, second_best=True, figsize=(7.
 
 
 # ---------------------------------------------------------------------------
-# trajectories.png -- ported from generate_trajectories_figure.py, which was already
-# well-designed (named, eq-tagged loci, sanity_checks()); adapted only to call
-# `enclose.loci` instead of its own inline copies of the same formulas.
-# ---------------------------------------------------------------------------
-
-_TRAJ_YLIM = (-1.8, 4.4)
-_TRAJ_XLIM = (0.74, 2.34)
-_TRAJ_HATCH_CAP = 3.6
-_TRAJ_THETA_TAU = loci.THETA_TAU
-
-_ARROW = dict(arrowstyle="-|>", linewidth=2.2, color="black", shrinkA=0, shrinkB=0, mutation_scale=18)
-_WBOX = dict(facecolor="white", edgecolor="none", alpha=0.85, pad=1.2)
-_ARROW_LEN = 1.6
-
-
-def _traj_base_panel(ax):
-    """The Figure-5-style canvas: first-best band, second-best loci, decentralized loci,
-    over/under-enclosure hatching, dotted verticals. Returns the low-TFP theta grid."""
-    th_lo = np.linspace(0.82, CV - 1e-6, 500)
-    th_hi = np.linspace(CV, 2.1, 500)
-    th_fb = np.linspace(1.1, 2.1, 500)
-    th_s = np.linspace(1.02, CV, 500)
-
-    ax.plot(th_fb, loci.ln_l01(th_fb), color=COLOR_PLANNER_BLUE, alpha=0.54)
-    ax.plot(th_fb, loci.ln_l11(th_fb), color=COLOR_PLANNER_BLUE, alpha=0.54)
-    ax.fill_between(th_fb, loci.ln_l01(th_fb), loci.ln_l11(th_fb), alpha=0.05, color="C0")
-
-    ax.plot(th_s, loci.ln_ls(th_s), color=COLOR_PLANNER_BLUE, linestyle=LINESTYLE_SELECTION, linewidth=2)
-    ax.plot(th_hi, loci.ln_lc0(th_hi), color=COLOR_PLANNER_BLUE, linestyle=LINESTYLE_SELECTION)
-    ax.plot(th_hi, loci.ln_ld1(th_hi) + COMPARISON_VISUAL_SHIFT, color=COLOR_PLANNER_BLUE, linestyle=LINESTYLE_SELECTION)
-
-    ax.plot(th_hi, loci.ln_ld0(th_hi), color=COLOR_DECENTRALIZED)
-    ax.plot(th_hi, loci.ln_ld1(th_hi), color=COLOR_DECENTRALIZED, linewidth=2)
-
-    upper = np.where(th_lo > 1.001, loci.ln_ls(np.maximum(th_lo, 1.001)), np.inf)
-    upper = np.minimum(upper, _TRAJ_HATCH_CAP)
-    ax.fill_between(th_lo, loci.ln_gg(th_lo), upper, alpha=0.75, hatch=".",
-                     color="none", linewidth=0.0, edgecolor="red")
-
-    ax.fill_between(th_hi, loci.ln_lc0(th_hi), loci.ln_ld0(th_hi), alpha=0.5, hatch="...",
-                     color="none", linewidth=0.0, edgecolor="blue")
-    ax.fill_between(th_hi, loci.ln_ld0(th_hi), loci.ln_ld1(th_hi), alpha=0.5, hatch="..",
-                     color="none", linewidth=0.0, edgecolor="blue")
-
-    ax.axvline(CV, ymax=0.95, linestyle=LINESTYLE_THRESHOLD, color="black")
-    ax.axvline(1, ymax=0.95, linestyle=LINESTYLE_THRESHOLD, color="black")
-    ax.text(1, _TRAJ_YLIM[0] + 0.06, r"$1$", fontsize=14, ha="center")
-    ax.text(CV, _TRAJ_YLIM[0] + 0.06, r"$\theta_H=\frac{1}{\alpha}$", fontsize=14, ha="center")
-
-    ep = 2.115
-    ax.text(ep, loci.ln_l01(np.array([2.1]))[0], r"$\bar l^1_0$", fontsize=13)
-    ax.text(ep, loci.ln_l11(np.array([2.1]))[0] + 0.05, r"$\bar l^1_1$", fontsize=13)
-    ax.text(ep, loci.ln_lc0(np.array([2.1]))[0], r"$\bar l^s_0$", fontsize=13)
-    ax.text(ep, loci.ln_ld1(np.array([2.1]))[0] - 0.07, r"$\bar l^s_1, \bar l^d_1$", fontsize=13)
-    ax.text(ep, loci.ln_ld0(np.array([2.1]))[0] + 0.16, r"$\bar l^d_0$", fontsize=13)
-    ax.text(1.075, 4.05, r"$\bar l^s$", fontsize=13)
-
-    style_axes(ax)
-    ax.set_xlim(*_TRAJ_XLIM)
-    ax.set_ylim(*_TRAJ_YLIM)
-    xlbl = ax.set_xlabel(r"$\theta$", fontsize=18)
-    xpos = list(xlbl.get_position())
-    ax.xaxis.set_label_coords(xpos[0] + 0.44, xpos[1] - 0.02)
-    ax.set_ylabel(r"$\ln(\overline{l})$", fontsize=16)
-
-    return th_lo
-
-
-def _traj_panel_a(ax):
-    """Movements in fundamentals against loci fixed at mu = tau = 0."""
-    th_lo = _traj_base_panel(ax)
-    ax.plot(th_lo, loci.ln_gg(th_lo), color=COLOR_DECENTRALIZED, linestyle=LINESTYLE_SELECTION, linewidth=2)
-    ax.text(th_lo[0] - 0.055, loci.ln_gg(th_lo[:1])[0] + 0.04, r"$\bar l^d_{gg}$", fontsize=13)
-    ax.set_title(r"(a) Fundamentals: shocks to $\bar l$ and $c/A$  (loci fixed, $\mu=\tau=0$)", fontsize=13.5)
-
-    ax.scatter(1.0, 0.9, s=45, color="black", zorder=5, clip_on=False)
-    ax.text(1.0, 0.55, "Weitzman–Samuelson", fontsize=11, ha="center", va="top", bbox=_WBOX)
-
-    x = 2.0
-    y0 = -1.30
-    ax.annotate("", xy=(x, y0 + _ARROW_LEN), xytext=(x, y0), arrowprops=_ARROW)
-    ax.text(x + 0.03, y0 + 0.12, "Boserup", fontsize=11, ha="left", bbox=_WBOX)
-    cross = loci.ln_ld0(np.array([x]))[0]
-    ax.scatter(x, cross, s=48, facecolor="white", edgecolor="black", zorder=6, linewidth=1.4)
-    ax.text(x - 0.05, cross + 0.04, "smooth expansion", fontsize=10, ha="right", style="italic", bbox=_WBOX)
-
-    x = 1.2
-    y0 = 0.70
-    ax.annotate("", xy=(x, y0 + _ARROW_LEN), xytext=(x, y0), arrowprops=_ARROW)
-    ax.text(x - 0.035, 1.45, "Barbed wire /\ncheap titling", fontsize=11, ha="right", va="center", bbox=_WBOX)
-    cross = loci.ln_gg(np.array([x]))[0]
-    ax.scatter(x, cross, s=48, facecolor="white", edgecolor="black", zorder=6, linewidth=1.4)
-    ax.text(x + 0.045, cross - 0.06, "tipping point", fontsize=10, ha="left", style="italic", bbox=_WBOX)
-
-    ax.text(0.86, 3.0, "over-enclosure", fontsize=10, style="italic", color="darkred", rotation=-22, bbox=_WBOX)
-    ax.text(1.72, 0.12, "under-enclosure", fontsize=10, style="italic", color="darkblue", rotation=-13, bbox=_WBOX)
-
-    ax.text(_TRAJ_XLIM[0] + 0.04, _TRAJ_YLIM[0] + 0.32,
-            r"Vertical arrows: rise in $\bar l$ or equal-sized fall in $c/A$"
-            "\n" r"(all loci scale as $(c/A)^{1/\alpha}$).",
-            fontsize=9.5, style="italic", va="bottom")
-
-
-def _traj_panel_b(ax):
-    """Movements in institutions (tau, mu) with the economy's point fixed."""
-    th_lo = _traj_base_panel(ax)
-    ax.set_title(r"(b) Institutions: shifts in $\tau$ and $\mu$  (economy fixed)", fontsize=13.5)
-
-    ax.plot(th_lo, loci.ln_gg(th_lo), color=COLOR_DECENTRALIZED, linewidth=2)
-    ax.text(0.775, 2.55, r"$\bar l^d_{gg}(\tau\!=\!0)$", fontsize=12, ha="left", bbox=_WBOX)
-
-    th_tau = np.linspace(_TRAJ_THETA_TAU + 1e-4, CV - 1e-6, 800)
-    ax.plot(th_tau, loci.ln_gg(th_tau, tau=1.0), color="darkred", linewidth=2)
-    ax.text(1.515, 2.85, r"$\bar l^d_{gg}(\tau\!=\!1)$", fontsize=13, ha="left", color="darkred", bbox=_WBOX)
-    # "no raid" would be exactly backwards here: tau=1 is *full* compensation, so nothing
-    # is being taken. Enclosure simply does not cover what it must pay.
-    ax.text(1.245, 3.82, r"$\to\infty$: enclosure never covers $\tau$" "\n" r"for $\theta<\alpha^{-\alpha}$ when $\tau=1$",
-            fontsize=9, ha="center", va="center", style="italic", color="darkred", bbox=_WBOX)
-
-    x = 1.46
-    ax.annotate("", xy=(x, loci.ln_gg(np.array([x]))[0] + 0.12),
-                xytext=(x, loci.ln_gg(np.array([x]), tau=1.0)[0] - 0.10),
-                arrowprops=dict(arrowstyle="-|>", linewidth=2.0, color="darkred", mutation_scale=16))
-    ax.text(x + 0.02, 2.15, r"$\tau: 1\to 0$", fontsize=11, ha="left", color="darkred", bbox=_WBOX)
-
-    ax.scatter(1.1, 2.7, s=45, color="black", zorder=6)
-    ax.text(1.085, 2.98, "Marx / Brenner", fontsize=11, ha="right", bbox=_WBOX)
-
-    ax.annotate("", xy=(1.04, -1.35), xytext=(1.49, -1.35), arrowprops=_ARROW)
-    ax.text(1.265, -1.12,
-            r"$\mu\!\uparrow$:  $\theta_H^\mu=\frac{1}{\alpha}-\mu\frac{1-\alpha}{\alpha}\;\to\;1$",
-            fontsize=11, ha="center", bbox=_WBOX)
-
-    ax.scatter(1.9, -0.24, s=45, color="black", zorder=6)
-    ax.text(1.9, -0.62, "De Janvry", fontsize=11, ha="center", bbox=_WBOX)
-
-
-def trajectories():
-    """trajectories.png -- the new RESTUD-revision figure (editor item iii).
-
-    Source: generate_trajectories_figure.py, ported to call `enclose.loci` instead of its
-    own (numerically identical, cross-checked) inline locus definitions.
-    """
-    fig, (axa, axb) = plt.subplots(1, 2, figsize=(16, 7))
-    _traj_panel_a(axa)
-    _traj_panel_b(axb)
-    fig.tight_layout(w_pad=3.0)
-    return fig, (axa, axb)
-
-
 # ---------------------------------------------------------------------------
 # Explanatory figures for the online appendix -- not in the paper's set of 8.
 # These fill placeholders the appendix already numbers but never had generators for.

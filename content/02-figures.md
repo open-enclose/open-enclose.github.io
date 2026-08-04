@@ -25,7 +25,7 @@ To regenerate everything at once:
 python scripts/make_figures.py --outdir Figures
 ```
 
-That single command writes all eight paper figures plus the four explanatory figures used
+That single command writes all seven paper figures plus the four explanatory figures used
 elsewhere on this site. It runs in CI on every push, immediately before the site build, so
 the figures published here cannot drift from the code that generates them.
 
@@ -66,17 +66,15 @@ them with the table above.
 
 ## Explanatory figures
 
-Five more are used on this site but appear **nowhere in the paper**. Two fill placeholders the
+Four more are used on this site but appear **nowhere in the paper**. Two fill placeholders the
 [Mathematical Appendix](04-derivations.md) numbers but never had generators for; two support
-the [manufacturing extension](03-manufacturing.md); and `trajectories` was drawn for this site
-to separate movements *of* the economy from movements *of* the loci.
+the [manufacturing extension](03-manufacturing.md).
 
 ```python
 fig, ax = figures.labor_reaction(te=0.5, th=1.6, alp=0.5, mu=0.5)
 fig, ax = figures.labor_misallocation(te=0.5, alp=0.5, th=1.5, mu=0.0)
 fig, ax = figures.manufacturing_equilibrium(te_values=(0.0, 1.0), th=1.0, alp=0.4, b=0.7)
 fig, ax = figures.structural_transformation(alp=0.5, mu=0.0, b=0.5)
-fig, ax = figures.trajectories()
 ```
 
 ## Changing the parameters

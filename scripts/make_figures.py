@@ -27,7 +27,6 @@ TARGETS = [
     ("monopoly.png", figures.monopoly, {}, 100),
     ("comparison.png", figures.comparison, {}, 100),
     ("new_comp_fig4x4.png", figures.combined_4x4, {}, 200),
-    ("trajectories.png", figures.trajectories, {}, 120),
 ]
 
 # Explanatory figures used by the site's narrative pages but not in the paper's set of 8.

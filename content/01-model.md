@@ -226,19 +226,13 @@ leaving the loci alone and moving the economy's own point *up*. Density does exa
 **So shocks to $\bar l$, $c$ and $A$ are all the same movement on one fixed canvas, and only
 $\mu$ and $\tau$ genuinely reshape it.** That is what makes a single diagram carry the whole
 comparative-static story: population growth, cheaper fencing and better baseline technology
-are one arrow, not three.
-
-```{figure} ../Figures/trajectories.png
-:name: fig-trajectories
-:width: 100%
-
-Two kinds of change. **(a)** fundamentals — $\bar l$ and $c/A$ move the economy across fixed
-loci. **(b)** institutions — $\tau$ and $\mu$ move the loci themselves beneath a fixed economy.
-```
+are one arrow, not three. It is also why no separate figure is needed here — Figures 1 and 2
+already show everything, read as a fixed backdrop the economy moves across.
 
 $\alpha$ is a third kind, and unlike the others it rescales the axes: $\theta_H = 1/\alpha$, so
 a more labor-intensive technology shrinks the region below $\theta_H$ where enclosure decisions
-are strategic complements. You can drag it on the [explore page](05-explore.md).
+are strategic complements. That one you can drag, on the [explore page](05-explore.md), where
+the axes visibly move with it while $\mu$ and $\tau$ leave them alone.
 
 ## 4. The social efficiency of private enclosure decisions
 

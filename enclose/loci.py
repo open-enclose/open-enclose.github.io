@@ -29,8 +29,9 @@ ALP = 2 / 3                  # paper's benchmark alpha
 # what this means if the model is ever extended to output or welfare *levels*.
 C = 1.0
 CV = model.theta_H(ALP)      # theta_H at mu=0 = 1/alpha, eq. (24)
-# Asymptote of the tau=1, mu=0 global-games locus. Kept as a constant because
-# figures.trajectories draws exactly that curve; the general boundary is `theta_tau()`.
+# Asymptote of the tau=1, mu=0 global-games locus -- the mu=0, tau=1 special case of the
+# general boundary `theta_tau()`. Kept as a constant because `sanity_checks()` and
+# `tests/test_loci.py` both need a domain that starts just above it.
 THETA_TAU = ALP**(-ALP)
 
 

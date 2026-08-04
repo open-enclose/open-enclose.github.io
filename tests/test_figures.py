@@ -25,7 +25,6 @@ PAPER_FIGURES = [
     ("monopoly", {}),
     ("comparison", {}),
     ("combined_4x4", {}),
-    ("trajectories", {}),
 ]
 
 
