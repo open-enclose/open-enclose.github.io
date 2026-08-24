@@ -3,9 +3,9 @@
 Online appendix materials for:
 
 > Baker, Matthew J., and Jonathan H. Conning. 2026. "A Model of Enclosures: Conflict,
-> Coordination and Efficiency in the Transformation of Property Rights."
+> Coordination and Efficiency in the Transformation of Property Rights" Review of Economic Studies, _forthcoming_
 > [early arXiv PDF](https://arxiv.org/abs/2311.01592) |
-> [2026 revision PDF](enclosure_paper.pdf)
+> [Feb 2026 version PDF](enclosure_paper.pdf)
 
 Complete mathematical derivations, and the code that reproduces every figure in the paper.
 
