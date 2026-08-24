@@ -8,18 +8,15 @@ kernelspec:
 
 # Explore the Model in Your Browser
 
-Every other page on this site shows figures that were rendered ahead of time. This one does
-not. The cells below run **in your browser** — no server, no account, no install — and they
+Every other page on this site shows figures that were rendered ahead of time. This page allows you to run the cells below **with python in your browser** — no server, no account, no install. They
 call the same [`enclose`](https://github.com/open-enclose/open-enclose.github.io/tree/main/enclose)
-package that generates the paper's figures. Nothing here is a second implementation of the
-model; that is the whole point of the package existing.
+package that generates the paper's figures. 
 
 The source of each cell is collapsed. Use the toggle on a cell to read or edit it.
 
-:::{warning} First load is slow, and needs a CDN
-Starting the kernel downloads a Python runtime and the scientific stack — tens of megabytes.
-Expect roughly half a minute the first time, then near-instant afterwards while the page stays
-open. Once the model is loaded, evaluation is genuinely fast: every locus is closed-form numpy.
+:::{note} Running this page live in the background.  Expect roughly 20-30 seconds on first load 
+and then near-instant responses afterwards while the page stays
+open. Once loaded, model evaluation is fast: every locus is calculated in closed-form.
 
 The runtime itself comes from `cdn.jsdelivr.net`, not from this site — that is where
 `thebe-lite` fetches Pyodide from. On a network that blocks jsDelivr, this page will not
@@ -30,16 +27,9 @@ start. Nothing else on this site depends on it.
 
 The site is static HTML on GitHub Pages. It gains a Python kernel through
 [JupyterLite](https://jupyterlite.readthedocs.io/), which runs CPython compiled to
-WebAssembly ([Pyodide](https://pyodide.org/)) inside the browser tab. MyST wires this up with
-three lines in `myst.yml`:
+WebAssembly ([Pyodide](https://pyodide.org/)) inside the browser tab.  
 
-```yaml
-project:
-  jupyter:
-    lite: true
-```
-
-The one thing that is not automatic is `enclose` itself — it is not on PyPI, and Pyodide only
+The one thing that is not automatic is `enclose` itself. Pyodide only
 knows about packages in its own distribution. So the build ships a wheel as a static asset and
 the first cell installs it from this site.
 
